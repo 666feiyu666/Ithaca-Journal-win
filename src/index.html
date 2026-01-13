@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>伊萨卡手记 (Ithaca Journal)</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/room.css"> 
+    <link rel="stylesheet" href="css/city.css">
+    <link rel="stylesheet" href="css/shop.css">
+    <link rel="stylesheet" href="css/story.css">
+    <link rel="stylesheet" href="css/backpack.css">
+</head>
+<body>
+    
+    <div id="scene-intro" class="intro-container">
+        <img src="assets/images/city/street0.png" class="intro-bg">
+        <button id="btn-skip-intro" class="pixel-font">跳过剧情 >></button>
+        <div class="dialogue-box-container" id="intro-dialogue-box">
+            <div class="dialogue-bg"></div> 
+            <div class="dialogue-content pixel-font">
+                <h3 id="dialogue-speaker">???</h3> 
+                <p id="dialogue-text">...</p>     
+                <div class="dialogue-arrow">▼</div> 
+            </div>
+        </div>
+    </div>
+
+    <div id="scene-room" class="room-container">
+        <div class="iso-room">
+            <img src="assets/images/room/roombg.png" class="room-background" alt="Room Background">
+        </div>
+    </div>
+
+    <div id="global-toast" class="toast hidden"></div>
+
+
+    <div class="room-hud">
+        <div id="btn-mailbox" class="hud-item clickable" title="查看信件">
+            <span class="hud-icon">📫</span> 
+            <span class="hud-text">Day <span id="day-display-room">1</span></span>
+            <div id="mail-red-dot" class="red-dot" style="display:none;">!</div>
+        </div>
+        
+        <span class="divider">|</span>
+        
+        <div class="hud-item">
+            <span class="hud-icon">💧</span> 
+            <span class="hud-text"><span id="ink-display-room">0</span> ml</span>
+        </div>
+        
+        <span class="divider">|</span>
+
+        <div class="hud-item">
+            <span class="hud-icon">🖋️</span> 
+            <span class="hud-text"><span id="word-display-room">0</span> 字</span>
+        </div>
+    </div>
+
+    <div id="modal-mailbox" class="modal-overlay full-screen-modal">
+        <div class="modal-content mailbox-layout">
+            <header>
+                <h2>📬 信箱</h2>
+                <span style="font-size: 12px; color: #666; margin-left: 10px;">收纳往日的回忆</span>
+                <button class="btn-close-modal" onclick="closeModal('modal-mailbox')">❌ 关闭</button>
+            </header>
+            
+            <div id="mailbox-grid" class="mailbox-grid">
+                </div>
+        </div>
+    </div>
+
+    <div id="modal-letter" class="modal-overlay">
+        <div class="letter-ui-container">
+            <div class="letter-content-area">
+                <div class="letter-meta">
+                    <span id="letter-view-date">Day 1</span>
+                    <span id="letter-view-sender">From: ???</span>
+                </div>
+                <h3 id="letter-view-title">标题</h3>
+                <div class="letter-scroll-box">
+                    <p id="letter-view-body">...</p>
+                </div>
+            </div>
+            
+            <div class="letter-actions">
+                <button id="btn-close-letter" class="btn-primary">收起信件</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-mail-reflection" class="modal-overlay">
+        <div class="modal-content" style="width: 400px; text-align: center; background: #fdfbf7; border: 2px solid #5d4037;">
+            <h3 style="color: #5d4037; margin-top: 0;">💭 此刻的想法...</h3>
+            
+            <p id="reflection-prompt" style="font-size: 14px; color: #666; font-style: italic; margin-bottom: 15px;">
+                (读完这封信，你想到了什么？)
+            </p>
+
+            <textarea id="reflection-input" placeholder="写下你的只言片语... (可留空)" 
+                      style="width: 100%; height: 100px; padding: 10px; box-sizing: border-box; 
+                             border: 1px solid #d7ccc0; background: #fff; font-family: 'SimSun'; margin-bottom: 20px;"></textarea>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="btn-skip-reflection" class="btn-cancel">跳过</button>
+                <button id="btn-submit-reflection" class="btn-primary">✨ 记录感想</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="decoration-hud" style="display: none;">
+        <div class="deco-hint">🏗️ 装修模式：拖拽家具调整位置，拖回下方回收</div>
+        <div class="inventory-bar-container">
+            <div id="inventory-bar" class="inventory-list"></div>
+        </div>
+        <button id="btn-close-deco" class="action-btn" style="position:fixed; bottom: 20px; right: 20px; z-index: 200;">
+            完成装修
+        </button>
+    </div>
+
+    <div class="bottom-right-toolbar">
+        <button id="btn-show-achievements" class="icon-btn-large" title="成就列表">
+            🏆
+        </button>
+    </div>
+
+    <div id="modal-achievements" class="milestone-window" style="display: none;">
+        <div class="milestone-header">
+            <span class="milestone-title">🏆 旅途里程碑</span>
+            <button class="btn-close-modal" onclick="document.getElementById('modal-achievements').style.display='none'">×</button>
+        </div>
+        <div id="achievement-list" class="achievement-grid">
+            </div>
+    </div>
+
+    <div class="top-right-toolbar">
+        <button id="btn-icon-home" class="icon-btn" title="回到房间">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+        </button>
+
+        <button id="btn-icon-backpack" class="icon-btn" title="我的背包">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"></path>
+                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
+                <path d="M8 21v-5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v5"></path>
+                <path d="M8 10h8"></path>
+                <path d="M8 18h8"></path>
+            </svg>
+        </button>
+
+        <button id="btn-icon-shop" class="icon-btn" title="家具商店">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+        </button>
+        <button id="btn-icon-map" class="icon-btn" title="城市地图">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+        </button>
+        <button id="btn-icon-journal" class="icon-btn" title="回顾手记">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        </button>
+        <button id="btn-icon-theme" class="icon-btn" title="切换时段">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+        <button id="btn-icon-deco" class="icon-btn" title="装修房间">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM9 9h6v6H9z"/></svg>
+        </button>
+        <button id="btn-icon-reset" class="icon-btn" title="重置数据" style="border-color: #ffcccc; color: #d32f2f;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+    </div>
+
+    <div id="scene-map" class="map-container" style="display: none;">
+        <img src="assets/images/city/street.png" class="map-bg" alt="City Street">
+        <div id="hotspot-luckin" class="map-node-hotspot" style="top: 50%; left: 12%; width: 18%; height: 25%;" title="Luckin Coffee"></div>
+        <div id="hotspot-home-pin" class="map-node-hotspot" style="top: 15%; left: 36%; width: 22%; height: 65%;" title="回家"></div>
+    </div>
+
+    <div id="modal-map-selection" class="modal-overlay">
+        <div class="map-selection-container">
+            <div class="selection-header">
+                <span class="pixel-font">📍 您要去哪里？</span>
+                <button class="close-text-btn pixel-font" onclick="closeModal('modal-map-selection')">取消</button>
+            </div>
+            
+            <div id="map-choices-list" class="choices-list">
+                </div>
+        </div>
+    </div>
+
+    <div id="modal-backpack" class="modal-overlay full-screen-modal">
+        <div class="modal-content backpack-layout">
+            <header>
+                <h2>🎒 旅行背包</h2>
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="fragments">记忆碎片</button>
+                    <button class="tab-btn" data-tab="items" style="opacity:0.5; cursor:not-allowed;">收藏品(待开发)</button>
+                </div>
+                <button class="btn-close-modal" onclick="closeModal('modal-backpack')">❌ 关闭</button>
+            </header>
+            
+            <div class="backpack-container">
+                <div id="backpack-grid" class="backpack-grid">
+                    </div>
+                
+                <div class="backpack-details">
+                    <div id="bp-detail-empty" style="color:#999; margin-top:50px;">点击左侧物品查看详情</div>
+                    <div id="bp-detail-content" style="display:none;">
+                        <img id="bp-detail-img" src="" class="pixel-art">
+                        <h3 id="bp-detail-title"></h3>
+                        <div class="bp-meta">来源: <span id="bp-detail-origin"></span></div>
+                        <hr>
+                        <p id="bp-detail-desc"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-desk" class="modal-overlay full-screen-modal">
+        <div class="modal-content desk-layout">
+            <header>
+                <h2>📝 写作台</h2>
+                <div>
+                    <button id="btn-open-workbench" class="action-btn">🔨 进入装订模式</button>
+                    <button class="btn-close-modal" onclick="closeModal('modal-desk')">❌ 返回房间</button>
+                </div>
+            </header>
+            <div class="layout">
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h4>往日文档</h4>
+                        <button id="btn-new-entry" title="新建日记">+</button>
+                    </div>
+                    <div id="journal-list"></div>
+                </div>
+                <div class="main-editor">
+                    <div style="position: relative; flex: 1; display: flex; flex-direction: column;">
+                        <textarea id="editor-area" placeholder="在这里记下你的思绪..."></textarea>
+                        <div id="editor-preview" class="markdown-preview" style="display: none;"></div>
+                    </div>
+                    <div class="editor-footer">
+                        <span id="save-status">(输入自动保存)</span>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btn-toggle-journal-preview" class="action-btn" style="background:#666;">👁️ 预览</button>
+                            <button id="btn-delete-entry" style="background: #d32f2f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">🗑️ 删除</button>
+                            <button id="btn-confirm-entry">✅ 确认记录 (+10 墨水)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-create-notebook" class="modal-overlay">
+        <div class="modal-content" style="width: 320px; text-align: center;">
+            <h3 style="margin-top: 0; color: #5d4037;">新建手记本</h3>
+            <p style="font-size: 12px; color: #888; margin-bottom: 15px;">为你的新想法建一个家</p>
+            
+            <input type="text" id="input-notebook-name" placeholder="例如：关于她的梦..." 
+                   style="width: 100%; padding: 12px; box-sizing: border-box; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; outline: none;">
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-cancel" onclick="document.getElementById('modal-create-notebook').style.display='none'">取消</button>
+                <button id="btn-submit-notebook" class="btn-primary">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-bookshelf-ui" class="modal-overlay full-screen-modal">
+        <div class="modal-content bookshelf-layout">
+            <header>
+                <h2>📚 书架</h2>
+                <button class="btn-close-modal" onclick="closeModal('modal-bookshelf-ui')">❌ 返回房间</button>
+            </header>
+            <section class="bookshelf-section">
+                <div id="bookshelf"></div>
+            </section>
+        </div>
+    </div>
+
+    <div id="workbench-modal" class="modal-overlay">
+        <div class="modal-content workbench-layout">
+            <div class="workbench-sidebar">
+                <h3>1. 选择素材</h3>
+                
+                <div style="margin-bottom: 10px;">
+                    <select id="workbench-filter-notebook" class="pixel-font" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd; background: #fff;">
+                        <option value="ALL">📂 所有记忆</option>
+                        </select>
+                </div>
+
+                <input type="text" id="workbench-search" placeholder="🔍 搜索关键词...">
+                <p class="hint">点击下方片段导入书稿</p>
+                <div id="workbench-sources" style="flex: 1; overflow-y: auto;"></div>
+            </div>
+            <div class="workbench-main">
+                <h3 style="margin-top:0;">2. 编辑书稿</h3>
+                <input type="text" id="manuscript-title-input" placeholder="请输入书名..." style="width: 100%; box-sizing: border-box;">
+                <div class="cover-selection-area">
+                    <p style="font-size: 12px; color: #666;">选择封皮:</p>
+                    <div class="cover-options">
+                        <img src="assets/images/booksheet/booksheet1.png" class="cover-option selected" data-cover="booksheet1.png">
+                        <img src="assets/images/booksheet/booksheet2.png" class="cover-option" data-cover="booksheet2.png">
+                        <img src="assets/images/booksheet/booksheet3.png" class="cover-option" data-cover="booksheet3.png">
+                    </div>
+                </div>
+                <div style="position: relative; flex: 1; display: flex; flex-direction: column;">
+                    <textarea id="manuscript-editor" placeholder="内容拼贴..."></textarea>
+                    <div id="manuscript-preview" class="markdown-preview" style="display: none;"></div>
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-toggle-manuscript-preview" class="action-btn" style="background:#666;">👁️ 预览</button>
+                    <div>
+                        <button id="btn-close-workbench" class="btn-cancel">取消</button>
+                        <button id="btn-publish" class="btn-primary">📘 出版成书</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="reader-modal" class="modal-overlay">
+        <div class="modal-content reader-layout">
+            <div class="reader-header">
+                <span id="reader-date" style="color:#888; font-size:12px;"></span>
+                <div>
+                    <button id="btn-delete-book" class="action-btn" style="color:#d32f2f; border:1px solid #d32f2f;">🗑️ 销毁</button>
+                    <button id="btn-edit-book" class="action-btn">✏️ 修订</button>
+                    <button id="btn-close-reader" class="close-btn">×</button>
+                </div>
+            </div>
+            <div id="reader-view-mode">
+                <h2 id="reader-title"></h2>
+                <hr>
+                <div id="reader-text" class="paper-text"></div>
+            </div>
+            <div id="reader-edit-mode" style="display: none; flex-direction: column; gap: 10px;">
+                <input type="text" id="reader-title-input" style="width: 100%;">
+                <textarea id="reader-content-input" style="min-height: 300px; width: 100%;"></textarea>
+                <div style="text-align: right;">
+                    <button id="btn-cancel-edit" class="btn-cancel">取消</button>
+                    <button id="btn-save-book" class="btn-primary">💾 保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-shop" class="modal-overlay full-screen-modal">
+        <div class="modal-content shop-layout">
+            <header>
+                <h2>🛒 家具商店</h2>
+                <div class="shop-balance">余额: 💧 <span id="shop-ink-display">0</span></div>
+                <button class="btn-close-modal" onclick="closeModal('modal-shop')">❌ 关闭</button>
+            </header>
+            <div id="shop-list" class="shop-grid"></div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+    <script>
+        /**
+         * 修复弹窗逻辑的核心函数
+         */
+        function closeModal(id) {
+            // 1. 关闭目标弹窗
+            const target = document.getElementById(id);
+            if (target) target.style.display = 'none';
+            
+            // 2. 全局清理：强制隐藏所有类型的弹窗
+            // (添加了 .milestone-window 以确保成就面板也能被一并关闭)
+            document.querySelectorAll('.modal-overlay, .milestone-window').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+    </script>
+</body>
+</html>

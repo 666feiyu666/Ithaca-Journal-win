@@ -1,0 +1,682 @@
+/* src/css/room.css - 完整版 (含信箱系统) */
+
+/* ================== 1. 房间容器基础 ================== */
+
+/* 外层容器：负责居中和背景 */
+.room-container {
+    width: 100vw;
+    height: 100vh;
+    background: #2b2b2b; /* 深色背景，作为屏幕边缘填充 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* 禁止出现滚动条 */
+    position: relative;
+}
+
+/* 核心房间区域 (画布) */
+.iso-room {
+    position: relative;
+    /* 房间尺寸放大 3 倍 (320x240 -> 960x720) */
+    width: 960px; 
+    height: 720px; 
+    margin: auto;
+}
+
+/* 房间背景图 */
+.room-background {
+    width: 100%;
+    height: 100%;
+    /* 像素化渲染，保证放大后清晰不模糊 */
+    image-rendering: pixelated; 
+    image-rendering: -moz-crisp-edges;
+    object-fit: contain;
+    z-index: 0; /* 最底层 */
+    transition: filter 1s ease-in-out; /* 夜间模式过渡动画 */
+}
+
+/* 夜间模式滤镜 */
+.room-background.night-mode {
+    filter: brightness(0.5) contrast(1.1) grayscale(0.2) hue-rotate(-10deg);
+}
+
+
+/* ================== 2. 交互热区 & 家具 ================== */
+
+/* (旧) 透明热区通用样式 - 兼容保留 */
+.hotspot {
+    position: absolute;
+    cursor: pointer;
+    z-index: 50;
+    background: transparent; 
+    border: none;
+    transition: background 0.2s;
+}
+.hotspot:hover {
+    background: rgba(255, 255, 255, 0.1); 
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+/* 1. 家具基础样式 (常态) */
+.pixel-furniture {
+    position: absolute;
+    cursor: pointer;
+    image-rendering: pixelated; 
+    filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.5));
+    transition: transform 0.2s, filter 0.2s;
+    transform-origin: bottom center;
+
+    /* ✨ 必须加上这两行！否则静止时无法读取旋转方向 */
+    --dir: 1; 
+    transform: scaleX(var(--dir)); 
+}
+
+/* 2. 悬浮样式 (Hover) */
+.pixel-furniture:hover {
+    /* ✨ 必须保留 var(--dir)，否则悬浮时会瞬间转回去 */
+    /* 同时加上 !important 确保它浮在最上层 */
+    transform: scaleX(var(--dir)) scale(1.05) translateY(-5px);
+    z-index: 9999 !important; 
+    
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));
+}
+
+
+/* ================== 3. HUD (界面元素 - 含信箱更新) ================== */
+
+/* 左上角状态栏 (墨水/日期/信箱) */
+.room-hud {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.9); /* 稍微增加不透明度 */
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 10001;
+
+    /* ✨ Flex布局，让图标横向对齐 */
+    display: flex;
+    align-items: center;
+    gap: 10px; 
+}
+
+/* 单个HUD项 */
+.hud-item {
+    display: flex;
+    align-items: center;
+    position: relative; /* 为了定位红点 */
+}
+
+/* 可点击的HUD项 (如信箱) */
+.hud-item.clickable {
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin: -2px 0; /* 微调垂直位置 */
+}
+
+.hud-item.clickable:hover {
+    background: rgba(0,0,0,0.05);
+    transform: scale(1.05);
+}
+
+/* 分隔线 */
+.divider { color: #ccc; }
+
+/* 图标与文字间距 */
+.hud-icon { margin-right: 5px; font-size: 16px; }
+.hud-text { font-weight: bold; color: #5d4037; }
+
+/* 🔴 信箱红点动画 */
+.red-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background-color: #ff4444;
+    border-radius: 50%;
+    border: 2px solid white;
+    color: white;
+    font-size: 8px; /* 虽然文字不显示，但为了居中保留 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    
+    /* 呼吸跳动动画 */
+    animation: bounce 1s infinite ease-in-out;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+/* 右上角工具栏 */
+.top-right-toolbar {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 15px;
+    z-index: 10000; 
+}
+
+/* 图标按钮样式 */
+.icon-btn {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    color: #333;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.icon-btn svg {
+    width: 20px; height: 20px; stroke-width: 2px;
+}
+.icon-btn:hover {
+    background: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.icon-btn:active {
+    transform: translateY(0); box-shadow: none;
+}
+
+/* 提示框 (Toast) */
+.toast {
+    position: absolute;
+    bottom: 10%; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    z-index: 100;
+    transition: opacity 0.5s;
+}
+.toast.hidden { opacity: 0; pointer-events: none; }
+
+
+/* ================== 4. 弹窗布局 (含信纸) ================== */
+
+.full-screen-modal {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+}
+.desk-layout {
+    width: 80%; max-width: 900px; height: 80vh;
+    display: flex; flex-direction: column;
+}
+.bookshelf-layout {
+    width: 70%; max-width: 800px; min-height: 50vh;
+}
+
+/* ✉️ 信纸弹窗样式 */
+.letter-paper {
+    background: #fdfbf7; /* 米黄色信纸 */
+    width: 450px;
+    padding: 40px;
+    border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 1px solid #e0e0e0;
+    
+    /* 宋体更有书信感 */
+    font-family: "Songti SC", "SimSun", "PMingLiU", serif; 
+    position: relative;
+    
+    /* 信纸横线纹理 */
+    background-image: linear-gradient(#f1f1f1 1px, transparent 1px);
+    background-size: 100% 32px; /* 行高 */
+    background-position: 0 20px; /* 稍微下移一点，对齐文字 */
+}
+
+.letter-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #5d4037;
+    padding-bottom: 10px;
+}
+
+.letter-body {
+    font-size: 17px;
+    line-height: 32px; /* 严格对齐背景行高 */
+    color: #444;
+    white-space: pre-wrap; /* 保留换行 */
+    min-height: 200px;
+    max-height: 60vh;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.letter-footer {
+    margin-top: 20px;
+    text-align: right;
+}
+
+
+/* ================== 5. 装修模式 (Decoration Mode) ================== */
+
+/* 装修 HUD 容器 (全屏) */
+#decoration-hud {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: 150;
+    pointer-events: none; /* 🔴 关键：允许鼠标穿透，点击下方的家具 */
+}
+
+/* 顶部提示 */
+.deco-hint {
+    position: absolute;
+    top: 20px; width: 100%;
+    text-align: center;
+    color: white; font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    pointer-events: auto; /* 恢复点击 */
+}
+
+/* 底部物品栏容器 */
+.inventory-bar-container {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 120px;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-top: 2px solid #5d4037;
+    pointer-events: auto; /* 恢复点击，否则无法拖拽新家具 */
+}
+
+/* 完成按钮 */
+#btn-close-deco {
+    pointer-events: auto; 
+    cursor: pointer;
+}
+
+/* 物品列表 */
+.inventory-list {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding: 10px;
+    max-width: 90%;
+}
+
+/* 物品格子 */
+.inventory-slot {
+    width: 80px; height: 80px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    display: flex; justify-content: center; align-items: center;
+    cursor: grab;
+    border: 1px solid #444;
+    transition: transform 0.2s;
+}
+.inventory-slot:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-5px);
+}
+.inventory-slot img {
+    max-width: 70%; max-height: 70%;
+    image-rendering: pixelated;
+    pointer-events: none;
+}
+
+
+/* ================== 6. 装修视觉反馈 ================== */
+
+/* 正在装修时的家具样式 */
+.iso-room.decorating .pixel-furniture {
+    cursor: move;
+    border: none;
+    /* 白色光晕提示可移动 */
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8));
+    transition: filter 0.2s;
+}
+.iso-room.decorating .pixel-furniture:hover {
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 1));
+    transform: scale(1.02);
+}
+
+/* 装修网格投影 (符合透视的菱形) */
+.iso-room.decorating::after {
+    content: '';
+    position: absolute;
+    top: 35%; 
+    left: 10%; 
+    width: 80%; height: 65%;
+    pointer-events: none;
+    z-index: 0; /* 在背景之上，家具之下 */
+    
+    /* 绘制等轴网格线 (约 26.5 度) */
+    background-image: 
+        linear-gradient(26.5deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+        linear-gradient(-26.5deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+    background-size: 5% 10%; 
+    
+    /* 限制网格只显示在地板区域 */
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    opacity: 0.6;
+}
+
+/* ================== 7. 拖拽与落地光标 ================== */
+
+/* 拖拽中的幻影 (Ghost) */
+.dragging-ghost {
+    position: fixed; 
+    top: 0; left: 0;
+    pointer-events: none; /* 🔴 关键：必须穿透，让鼠标能检测底下的网格 */
+    z-index: 99999 !important; 
+    opacity: 0.8;
+    image-rendering: pixelated;
+    margin: 0; padding: 0;
+    
+    /* 移除 scale 变换，使用 JS 传入的确切宽度，防止尺寸跳变 */
+    /* transform: none;  */
+}
+
+/* 落地光标 (Landing Marker) - 绿色脚印 */
+.landing-marker {
+    position: absolute;
+    /* 1. 把它压扁！高度设死，不要太高，看起来像地砖 */
+    height: 40px !important; 
+    
+    background: rgba(0, 255, 0, 0.3);
+    border: 2px solid #00ff00;
+    
+    /* 2. 核心变换：利用 skew 模拟等轴视角的“躺倒”效果 */
+    /* 配合 scaleY 压扁，使其看起来贴合地板 */
+    transform: skewX(-26.5deg) scaleY(0.6);
+    /* 修正变换原点，确保旋转后位置不飘 */
+    transform-origin: bottom center; 
+    
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    
+    /* 3. 层级要在家具下面，地板上面 */
+    z-index: 10; 
+    
+    pointer-events: none;
+    display: none;
+    transition: background 0.2s, border-color 0.2s, width 0.1s, left 0.1s, top 0.1s;
+}
+
+/* 红色非法状态 */
+.landing-marker.invalid {
+    background: rgba(255, 0, 0, 0.3);
+    border-color: #ff0000;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+/* === 1. 信箱目录样式 === */
+.mailbox-layout {
+    width: 650px; 
+    height: 550px;
+    display: flex;
+    flex-direction: column;
+    /* 整个弹窗背景稍微深一点，突显信件 */
+    background: #f0ebe5; 
+    border-radius: 8px;
+    border: 4px solid #5d4037;
+}
+
+.mailbox-grid {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+    display: grid;
+    /* 调整格子大小以适应 letter.png 的比例 */
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+    gap: 25px;
+}
+
+/* 列表中的单个项目 */
+.mail-grid-item {
+    position: relative;
+    width: 100%;
+    /* 设定高度，确保图片完整显示 */
+    aspect-ratio: 3 / 4; 
+    
+    /* ✨ 核心修改：直接使用 letter.png 作为背景 */
+    background-image: url('../assets/images/item/letter.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: transparent; /* 去掉白色底色 */
+    
+    border: none; /* 去掉边框 */
+    box-shadow: none; /* 默认无阴影 */
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* 文字沉底 */
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.mail-grid-item:hover {
+    transform: translateY(-5px) scale(1.05);
+    /* 悬停时给图片加一点投影，增加立体感 */
+    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+    background-color: transparent;
+    border: none;
+}
+
+/* 隐藏原本的图标占位符，因为背景已经是图标了 */
+.mail-icon { display: none; }
+
+/* 重新设计文字标签：像一个便签贴在信上 */
+.mail-info-box {
+    background: rgba(255, 255, 255, 0.9);
+    width: 90%;
+    padding: 5px 0;
+    border-radius: 4px;
+    text-align: center;
+    margin-bottom: 10px; /* 距离底部留点距离 */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    backdrop-filter: blur(2px);
+}
+
+.mail-title { 
+    font-size: 13px; 
+    font-weight: bold; 
+    color: #5d4037; 
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 5px;
+}
+
+.mail-day { 
+    font-size: 10px; 
+    color: #888; 
+}
+
+/* 未读状态：加个红点或者 NEW 标签在右上角 */
+.mail-grid-item.unread::after {
+    content: "NEW";
+    position: absolute;
+    top: 5px; right: 10px;
+    background: #d32f2f;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 2;
+}
+/* 去掉原来的红色边框样式 */
+.mail-grid-item.unread { border: none; background-color: transparent; }
+
+/* 锁定/空状态：半透明并黑白化 */
+.mail-grid-item.locked {
+    filter: grayscale(1) opacity(0.4);
+    cursor: default;
+}
+.mail-grid-item.locked:hover { transform: none; filter: grayscale(1) opacity(0.4); }
+
+/* =========================================
+   === 2. 阅读界面：沉浸式信纸 (Final Polish) ===
+   ========================================= */
+
+.letter-ui-container {
+    /* --- 1. 纸张质感 --- */
+    background-color: #f7f1e3; /* 温暖的羊皮纸色 */
+    background-image: 
+        /* 横线：极淡的青灰色，模拟墨水渗透 */
+        linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+        /* 纸张纹理：四周微暗的暗角效果 */
+        radial-gradient(circle at center, transparent 40%, rgba(160, 140, 120, 0.1) 100%);
+    
+    background-size: 100% 40px, 100% 100%; /* 行高设定为 40px */
+    background-position: 0 39px, 0 0;      /* 第一条线的位置 */
+    
+    /* --- 2. 容器尺寸与阴影 --- */
+    width: 520px;
+    height: 750px; /* 固定高度 */
+    max-height: 85vh;
+    
+    border-radius: 4px; /* 纸张只有微小的圆角 */
+    
+    /* 复杂的阴影：模拟纸张浮起和底部卷曲 */
+    box-shadow: 
+        0 2px 5px rgba(0,0,0,0.1),         /* 贴地阴影 */
+        0 15px 30px rgba(0,0,0,0.2),       /* 浮空阴影 */
+        inset 0 0 40px rgba(255,255,255,0.5); /* 纸面高光 */
+
+    /* --- 3. 布局控制 (解决无法滚动/关闭的核心) --- */
+    display: flex;
+    flex-direction: column;
+    padding: 40px 50px 30px 50px;
+    box-sizing: border-box;
+    position: relative;
+    
+    /* --- 4. 字体设定 --- */
+    /* 首选楷体，营造书信感 */
+    font-family: "KaiTi", "STKaiti", "BiauKai", "Georgia", serif;
+    color: #2d3436;
+}
+
+/* 顶部：日期与发件人 */
+.letter-meta {
+    flex-shrink: 0; /* 防止被压缩 */
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #8d6e63; /* 分隔线 */
+    
+    font-family: "Courier New", monospace; /* 打字机风格 */
+    font-size: 14px;
+    color: #8d6e63;
+    opacity: 0.8;
+}
+
+/* 标题 */
+#letter-view-title {
+    flex-shrink: 0;
+    margin: 0 0 10px 0;
+    text-align: center;
+    font-size: 26px;
+    font-weight: normal; /* 楷体不需要加粗 */
+    color: #2c3e50;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+}
+
+/* --- 核心内容区域 (滚动修复) --- */
+/* 如果你的 HTML 里有 letter-content-area 包裹层，请保留这个；如果没有，它不会有副作用 */
+.letter-content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+    min-height: 0;
+}
+
+.letter-scroll-box {
+    flex: 1; /* 占据剩余空间 */
+    overflow-y: auto; /* 允许滚动 */
+    
+    /* --- 5. 文字对齐魔法 --- */
+    font-size: 20px;       /* 字号 */
+    line-height: 40px;     /* ✨ 必须严格等于背景横线高度！ */
+    padding-top: 0px;      /* 微调首行位置 */
+    
+    white-space: pre-wrap;
+    text-align: justify;   /* 两端对齐 */
+    padding-right: 15px;   /* 防止文字贴着滚动条 */
+}
+
+/* --- 美化滚动条 (Webkit) --- */
+.letter-scroll-box::-webkit-scrollbar {
+    width: 6px;
+}
+.letter-scroll-box::-webkit-scrollbar-track {
+    background: transparent;
+}
+.letter-scroll-box::-webkit-scrollbar-thumb {
+    background-color: rgba(141, 110, 99, 0.2); /* 极淡的褐色 */
+    border-radius: 3px;
+}
+.letter-scroll-box::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(141, 110, 99, 0.4);
+}
+
+/* 底部按钮区域 */
+.letter-actions {
+    flex-shrink: 0;
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+/* --- 6. 按钮设计：火漆印章风格 --- */
+.letter-actions .btn-primary {
+    background: #c0392b; /* 火漆红 */
+    color: rgba(255,255,255,0.9);
+    
+    font-family: "KaiTi", "STKaiti", serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    
+    padding: 8px 40px;
+    border: 2px solid #a93226;
+    border-radius: 50% 50% 50% 50% / 10% 10% 10% 10%; /* 不规则椭圆，像印章 */
+    
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2), inset 0 2px 5px rgba(255,255,255,0.2);
+    transition: all 0.2s ease;
+    
+    /* 稍微旋转一点，看起来更自然 */
+    transform: rotate(-1deg);
+}
+
+.letter-actions .btn-primary:hover {
+    transform: rotate(0deg) scale(1.05);
+    background: #cd6155;
+    box-shadow: 0 6px 10px rgba(0,0,0,0.3);
+}
+
+.letter-actions .btn-primary:active {
+    transform: scale(0.98);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+}

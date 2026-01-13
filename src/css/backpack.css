@@ -1,0 +1,114 @@
+/* src/css/backpack.css */
+
+.backpack-layout {
+    width: 800px;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+    background: #fdfaf6;
+    border-radius: 12px;
+}
+
+.backpack-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: 20px;
+    gap: 20px;
+}
+
+/* 左侧网格 */
+.backpack-grid {
+    flex: 2;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    grid-auto-rows: 80px;
+    gap: 10px;
+    overflow-y: auto;
+    border-right: 1px solid #eee;
+    padding-right: 10px;
+    align-content: start; /* 防止少的时候拉伸 */
+}
+
+/* 物品格子 */
+.bp-slot {
+    background: #fff;
+    border: 2px solid #eee;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bp-slot:hover {
+    border-color: #5d4037;
+    background: #fff8e1;
+    transform: translateY(-2px);
+}
+
+.bp-slot.active {
+    border-color: #d84315;
+    background: #fff3e0;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+}
+
+.bp-slot img {
+    width: 60%;
+    height: 60%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+/* 右侧详情 */
+.backpack-details {
+    flex: 1;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    text-align: center;
+}
+
+#bp-detail-img {
+    width: 80px; 
+    height: 80px; 
+    margin-bottom: 15px;
+}
+
+.bp-meta {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 10px;
+}
+
+#bp-detail-desc {
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #444;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 4px;
+    border-left: 3px solid #ccc;
+}
+
+/* Tab 按钮 */
+.tab-buttons {
+    display: flex;
+    gap: 10px;
+}
+.tab-btn {
+    border: none;
+    background: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-bottom: 2px solid transparent;
+}
+.tab-btn.active {
+    color: #5d4037;
+    font-weight: bold;
+    border-bottom-color: #5d4037;
+}

@@ -1,0 +1,30 @@
+# 1. 依赖包 (最重要，通常那 1K+ 文件都在这里)
+node_modules/
+
+# 2. 本地存档数据 (保护隐私，不要上传你的日记和存档！)
+# 根据你的代码，这些文件是存储用户数据的
+user_data.json
+journal_data.json
+library_data.json
+
+# 3. 系统生成文件
+.DS_Store
+Thumbs.db
+
+# 4. 编辑器配置 (可选，通常不建议上传个人配置)
+.vscode/
+.idea/
+
+# 5. 构建输出 (如果你以后打包成 exe/dmg)
+dist/
+build/
+out/
+release/
+
+# 6. 日志文件
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 7. dist
+dist/

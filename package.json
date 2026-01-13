@@ -1,0 +1,47 @@
+{
+  "name": "ithaca-journal-dist-test",
+  "version": "1.0.0",
+  "description": "伊萨卡手记 - 独立分发测试包",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.ithaca.journal.dist.test",
+    "productName": "伊萨卡手记-测试版",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "src/data/",
+        "to": "default_data/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": ["portable"],
+      "icon": "src/assets/icons/app.ico" 
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.lifestyle",
+      "icon": "src/assets/icons/app.icns"
+    },
+    "asar": true
+  }
+}

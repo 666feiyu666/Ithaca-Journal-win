@@ -1,0 +1,148 @@
+/* src/css/shop.css */
+
+/* 商店弹窗布局：固定高度，背景色为纸张白 */
+.shop-layout {
+    width: 800px;
+    height: 80vh; /* 固定高度，确保在不同屏幕上一致 */
+    display: flex;
+    flex-direction: column;
+    background: #fdfaf6; 
+    border-radius: 12px; /* 圆角稍微大一点，更精致 */
+    overflow: hidden; /* 防止圆角被内部元素切掉 */
+}
+
+/* 顶部余额显示 */
+.shop-balance {
+    font-size: 16px;
+    color: #5d4037; /* 主题棕色 */
+    font-weight: bold;
+    margin-right: 20px;
+    background: rgba(93, 64, 55, 0.1);
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+
+/* 商品列表容器：网格布局 */
+.shop-grid {
+    display: grid;
+    /* 自动填充：每列最小 200px，这样拉伸窗口时会自动调整列数 */
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+    gap: 20px;
+    padding: 30px;
+    overflow-y: auto; /* 允许垂直滚动 */
+}
+
+/* 隐藏滚动条但保留滚动功能 (可选，为了美观) */
+.shop-grid::-webkit-scrollbar {
+    width: 6px;
+}
+.shop-grid::-webkit-scrollbar-thumb {
+    background-color: #e0e0e0;
+    border-radius: 3px;
+}
+
+/* 单个商品卡片 */
+.shop-item-card {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+/* 悬停效果：上浮 + 阴影 */
+.shop-item-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    border-color: #d7ccc8;
+}
+
+/* 商品图标区域 */
+.shop-icon-box {
+    width: 100px;
+    height: 100px;
+    background: #f8f8f8;
+    border-radius: 50%; /* 圆形背景 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+    border: 1px solid #f0f0f0;
+}
+
+/* 商品图片：像素风渲染 */
+.shop-icon {
+    width: 70%; 
+    height: auto;
+    image-rendering: pixelated; 
+    image-rendering: -moz-crisp-edges;
+}
+
+/* 文本信息区域 */
+.shop-info {
+    text-align: center;
+    width: 100%;
+    flex: 1; /* 撑开中间区域，把按钮挤到底部 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.shop-info h4 {
+    margin: 10px 0 5px 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.shop-info .desc {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.4;
+    margin: 0 0 10px 0;
+    height: 36px; /* 限制描述高度，超过两行隐藏，保证对齐 */
+    overflow: hidden;
+}
+
+.price-tag {
+    color: #2e7d32; /* 钞票绿 */
+    font-weight: 800;
+    font-size: 15px;
+    margin-bottom: 15px;
+}
+
+/* 购买按钮 */
+.btn-buy {
+    width: 100%;
+    padding: 10px 0;
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.btn-buy:hover {
+    background: #555;
+}
+
+.btn-buy:active {
+    transform: scale(0.98);
+}
+
+/* 已拥有状态 */
+.btn-buy.owned {
+    background: #f0f0f0;
+    color: #999;
+    cursor: default;
+    border: 1px solid #ddd;
+}
+.btn-buy.owned:hover {
+    background: #f0f0f0; /* 这里的 hover 不变色 */
+}
