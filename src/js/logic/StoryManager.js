@@ -367,7 +367,11 @@ export const StoryManager = {
     tryTriggerMailReaction(day, onComplete) {
         const scriptKey = `mail_reaction_day${day}`;
         
-        if (this.scripts[scriptKey]) {
+        // 🔴 错误代码 (原代码):
+        // if (this.scripts[scriptKey]) { ... }
+        
+        // ✅ 【新增修复 2】: 修正变量名，使用导入的 Scripts 对象
+        if (Scripts[scriptKey]) {
             console.log(`[StoryManager] 触发邮件读后感: ${scriptKey}`);
             
             setTimeout(() => {
@@ -379,10 +383,7 @@ export const StoryManager = {
                     if (onComplete) {
                         onComplete();
                     }
-                    // 2. 然后再检查有没有其他事件（如包裹）
-                    // ⚠️ 注意：不要在这里直接调用 checkDailyEvents 开启新剧情，
-                    // 否则两个弹窗会打架。最好是在读后感关闭后再检查。
-                    // 但为了简单起见，这里先保留原逻辑，或者你可以在 onComplete 内部自行安排。
+                    // 2. 然后再检查有没有其他事件
                 };
             }, 300); 
             

@@ -14,6 +14,10 @@ export const IntroScene = {
         // 👈 加载剧本
         this.currentScript = Scripts["intro_scene"].content;
 
+        // ✅ 【新增修复 1】: 手动将开场白加入已解锁列表，以便在回顾界面显示
+        // 因为 IntroScene 不走 StoryManager 的 startStory 逻辑，所以必须手动加
+        UserData.unlockScript("intro_scene");
+
         const scene = document.getElementById('scene-intro');
         const room = document.getElementById('scene-room');
         
