@@ -1,6 +1,6 @@
 /* src/js/data/Journal.js */
 import { UserData } from './UserData.js';
-import { StoryManager } from '../logic/StoryManager.js';
+import { FragmentSystem } from '../logic/FragmentSystem.js';
 
 export const Journal = {
     entries: [], 
@@ -92,7 +92,7 @@ export const Journal = {
                     entry.savedWordCount = newCount;
                     
                     if (diff > 0) {
-                        StoryManager.checkWordCountMilestones();
+                        FragmentSystem.checkWordCountMilestones();
                     }
                 }
             }
@@ -115,7 +115,7 @@ export const Journal = {
             
             if (currentCount > 0) {
                 UserData.updateWordCount(currentCount);
-                StoryManager.checkWordCountMilestones();
+                FragmentSystem.checkWordCountMilestones();
             }
 
             this.save();

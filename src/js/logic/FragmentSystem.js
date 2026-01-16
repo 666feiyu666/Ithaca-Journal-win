@@ -1,276 +1,128 @@
-/* src/js/logic/StoryManager.js */
+/* src/js/logic/FragmentSystem.js */
 import { UserData } from '../data/UserData.js';
 import { Library } from '../data/Library.js';
 import { UIRenderer } from '../ui/UIRenderer.js';
-import { Scripts } from '../data/Scripts.js'; // 确保正确导入
+import { StoryManager } from './StoryManager.js'; // 引入 StoryManager 以复用 showDialogue
 
-export const StoryManager = {
-    
+export const FragmentSystem = {
     // ============================================================
-    // 1. UI 与场景控制 (供 FragmentSystem 和剧情系统共用)
+    // 1. 配置数据 (FragmentDB, Recipes, Milestones)
     // ============================================================
-
-    showDialogue(title, htmlContent) {
-        const scene = document.getElementById('scene-intro');
-        const bgImg = scene.querySelector('.intro-bg');
-        const skipBtn = document.getElementById('btn-skip-intro');
-        const speakerEl = document.getElementById('dialogue-speaker');
-        const textEl = document.getElementById('dialogue-text');
-        const box = document.getElementById('intro-dialogue-box');
-        
-        const room = document.getElementById('scene-room'); 
-        const isCityMode = (room && window.getComputedStyle(room).display === 'none');
-
-        scene.style.display = 'flex';
-        scene.style.opacity = 1;
-        scene.style.background = 'rgba(0, 0, 0, 0.7)'; 
-        
-        if (bgImg) isCityMode ? bgImg.style.display = 'block' : bgImg.style.display = 'none';
-        if (skipBtn) skipBtn.style.display = 'none';
-
-        speakerEl.innerText = title;
-        speakerEl.style.color = "#d84315"; 
-        textEl.innerHTML = htmlContent;
-        
-        box.style.display = 'flex';
-        box.onclick = () => {
-            const currentCityMode = (room && window.getComputedStyle(room).display === 'none');
-            if (currentCityMode) {
-                box.style.display = 'none';
-                scene.style.background = 'rgba(0, 0, 0, 0.2)'; 
-            } else {
-                scene.style.display = 'none';
-                scene.style.background = ''; 
-                if (bgImg) bgImg.style.display = 'block';
-            }
-            speakerEl.style.color = ""; 
-            box.onclick = null;
-        };
+    fragmentDB: {
+        "frag_pineapple_01": {
+            title: "待开发日记1",
+            content: "...",
+            origin: "字数里程碑",
+            icon: "assets/images/item/note1.png"
+        },
+        "frag_pineapple_02": {
+            title: "待开发日记2",
+            content: "...",
+            origin: "字数里程碑",
+            icon: "assets/images/item/note1.png"
+        },
+        "frag_pineapple_03": {
+            title: "待开发日记3",
+            content: "...",
+            origin: "高阶里程碑或探索",
+            icon: "assets/images/item/note1.png"
+        }
     },
 
-    showSceneDialogue(title, htmlContent, bgSrc) {
-        const scene = document.getElementById('scene-intro');
-        const bgImg = scene.querySelector('.intro-bg');
-        const room = document.getElementById('scene-room');
-        const skipBtn = document.getElementById('btn-skip-intro');
-        const speakerEl = document.getElementById('dialogue-speaker');
-        const textEl = document.getElementById('dialogue-text');
-        const box = document.getElementById('intro-dialogue-box');
+    synthesisRecipes: [
+        {
+            bookId: "book_pineapple_diary_complete",
+            title: "糖水菠萝的日记",
+            cover: "assets/images/booksheet/booksheet1.png",
+            requiredFragments: ["frag_pineapple_01", "frag_pineapple_02", "frag_pineapple_03"],
+            fullContent: `# 糖水菠萝的日记 (完整版)\n\n...`
+        }
+    ],
 
-        if (room) room.style.display = 'none';
-        scene.style.display = 'flex';
-        scene.style.opacity = 1;
-        if (bgImg) { bgImg.style.display = 'block'; bgImg.src = bgSrc; }
-        scene.style.background = 'rgba(0, 0, 0, 0.2)'; 
-        if (skipBtn) skipBtn.style.display = 'none';
-        box.style.display = 'flex';
-
-        speakerEl.innerText = title;
-        speakerEl.style.color = "#d84315"; 
-        textEl.innerHTML = htmlContent;
-        box.onclick = () => { box.style.display = 'none'; box.onclick = null; };
-    },
-
-    returnHome() {
-        const scene = document.getElementById('scene-intro');
-        const bgImg = scene.querySelector('.intro-bg');
-        const room = document.getElementById('scene-room');
-        const box = document.getElementById('intro-dialogue-box');
-
-        scene.style.display = 'none';
-        if (room) room.style.display = 'block';
-        if (box) box.style.display = 'flex';
-        if (bgImg) { bgImg.style.display = 'block'; bgImg.src = 'assets/images/city/street0.png'; }
-    },
+    milestones: [
+        { threshold: 20,   fragmentId: "frag_pineapple_01" },
+        { threshold: 200,  fragmentId: "frag_pineapple_02" },
+        { threshold: 2000, fragmentId: "frag_pineapple_03" }
+    ],
 
     // ============================================================
-    // 2. 剧情播放核心 (State Management)
+    // 2. 逻辑方法
     // ============================================================
-
-    currentIndex: 0,
-    activeScript: null,
-    activeScriptId: null,
 
     /**
-     * 🟢 尝试触发书架剧情 (发现第一本书)
+     * 检查字数里程碑 (通常在 Binder/Editor 输入时调用)
      */
-    tryTriggerBookshelfStory() {
-        if (UserData.state.hasFoundMysteryEntry || !UserData.state.hasWatchedIntro) {
-            return false; 
-        }
-        
-        // 1. 开始特定剧情
-        this.startStory('find_first_note');
-
-        // 2. 设置回调
-        this._onStoryComplete = () => {
-            // 记录状态
-            UserData.state.hasFoundMysteryEntry = true;
-            UserData.save();
-
-            // 确保书本存在
-            const targetId = GUIDE_BOOK_CONFIG.id;
-            const exists = Library.getAll().find(b => b.id === targetId);
-
-            if (!exists) {
-                Library.addBook(GUIDE_BOOK_CONFIG);
-            } else {
-                exists.isReadOnly = true; 
+    checkWordCountMilestones() {
+        const currentWords = UserData.state.totalWords || 0;
+        this.milestones.forEach(ms => {
+            if (currentWords >= ms.threshold) {
+                this.unlockFragment(ms.fragmentId);
             }
-
-            // 提示文案
-            UIRenderer.log("📖 你发现了《伊萨卡手记 I》");
-
-            // 延迟刷新书架
-            setTimeout(() => {
-                UIRenderer.renderBookshelf();
-            }, 50);
-        };
-
-        return true;
+        });
     },
 
     /**
-     * 开始播放一段剧本
+     * 解锁碎片并弹窗
      */
-    startStory(scriptKey) {
-        const scriptData = Scripts[scriptKey];
-        
-        if (!scriptData) {
-            console.error("未找到剧本:", scriptKey);
-            return;
-        }
+    unlockFragment(fragmentId) {
+        const isNew = UserData.addFragment(fragmentId);
+        if (isNew) {
+            const fragInfo = this.fragmentDB[fragmentId];
+            if (!fragInfo) return;
 
-        this.activeScript = scriptData.content; 
-        this.activeScriptId = scriptKey;      
-        this.currentIndex = 0;
-        
-        // ✅ 核心修复：记录该剧情已解锁 (方便ReviewLog显示)
-        UserData.unlockScript(scriptKey); 
-
-        const scene = document.getElementById('scene-intro');
-        scene.style.display = 'flex';
-        scene.style.opacity = 1;
-        scene.style.background = 'rgba(0, 0, 0, 0.4)'; 
-        
-        const bgImg = scene.querySelector('.intro-bg');
-        if (bgImg) bgImg.style.display = 'none';
-
-        document.getElementById('btn-skip-intro').style.display = 'none';
-        this.renderLine();
-    },
-
-    renderLine() {
-        const line = this.activeScript[this.currentIndex];
-        document.getElementById('dialogue-speaker').innerText = line.speaker;
-        document.getElementById('dialogue-text').innerText = line.text;
-        
-        // 简单的震动特效
-        if (line.text.includes("用力拉拽")) {
+            // 震动效果
             const room = document.getElementById('scene-room');
             if(room) {
-               room.classList.add('shake-room');
-               setTimeout(() => room.classList.remove('shake-room'), 500);
+                room.classList.add('shake-room');
+                setTimeout(() => room.classList.remove('shake-room'), 500);
             }
-        }
 
-        const box = document.getElementById('intro-dialogue-box');
-        box.onclick = () => this.next();
-    },
-
-    next() {
-        this.currentIndex++;
-        if (this.currentIndex < this.activeScript.length) {
-            this.renderLine();
-        } else {
-            this.endStory();
-        }
-    },
-
-    /**
-     * 🟢 剧情结束处理
-     */
-    endStory() {
-        const scene = document.getElementById('scene-intro');
-        scene.style.display = 'none';
-
-        const bgImg = scene.querySelector('.intro-bg');
-        if (bgImg) bgImg.style.display = 'block';
-
-        const box = document.getElementById('intro-dialogue-box');
-        box.onclick = null; 
-
-        // 执行回调
-        if (this._onStoryComplete) {
-            this._onStoryComplete();
-            this._onStoryComplete = null;
-        }
-    },
-
-    // ============================================================
-    // 3. 每日事件与邮件交互
-    // ============================================================
-    
-    checkDailyEvents() {
-        const day = UserData.state.day;
-
-        // 包裹事件回调生成器
-        const createPackageCallback = (bookId, logText) => {
-             return () => {
-                Library.unlockSystemBook(bookId); 
-                UIRenderer.log(logText);
-                
-                const bookshelfModal = document.getElementById('modal-bookshelf-ui');
-                if(bookshelfModal && bookshelfModal.style.display !== 'none') {
-                    UIRenderer.renderBookshelf();
-                } 
-            };
-        };
-
-        if (day >= 7 && !Library.hasBook("guide_book_part2")) {
-            this.startStory('package_day_7');
-            this._onStoryComplete = createPackageCallback(2, "📦 收到了新的手记。");
-            return;
-        }
-
-        if (day >= 14 && !Library.hasBook("guide_book_part3")) {
-            this.startStory('package_day_14');
-            this._onStoryComplete = createPackageCallback(3, "📦 收到了新的手记。");
-            return;
-        }
-
-        if (day >= 21 && !Library.hasBook("guide_book_part4")) {
-            this.startStory('package_day_21');
-            this._onStoryComplete = createPackageCallback(4, "📦 收到了新的手记。");
-            return;
-        }
-    },
-
-    /**
-     * 🟢 尝试触发邮件读后感
-     * (已修复之前的变量名错误)
-     */
-    tryTriggerMailReaction(day, onComplete) {
-        const scriptKey = `mail_reaction_day${day}`;
-        
-        // ✅ 修复点：这里原来是 this.scripts (undefined)，现在改为 Scripts (正确引用)
-        if (Scripts[scriptKey]) {
-            console.log(`[StoryManager] 触发邮件读后感: ${scriptKey}`);
+            // 调用 StoryManager 显示通用对话框
+            StoryManager.showDialogue("✨ 发现碎片", 
+                `你捡到了一张泛黄的纸片：<br><strong style="font-size:1.1em;">《${fragInfo.title}》</strong><br><br>` + 
+                `<span style="color:#666; font-size:0.9em; font-style:italic;">"${fragInfo.content.substring(0, 25)}..."</span>`
+            );
             
-            setTimeout(() => {
-                this.startStory(scriptKey);
+            this.checkSynthesis();
+        }
+    },
 
-                this._onStoryComplete = () => {
-                    // 1. 弹出读后感输入框
-                    if (onComplete) {
-                        onComplete();
+    /**
+     * 检查是否满足合成条件
+     */
+    checkSynthesis() {
+        this.synthesisRecipes.forEach(recipe => {
+            // 如果已经有这本书了，跳过
+            const alreadyHasBook = Library.getAll().find(b => b.id === recipe.bookId);
+            if (alreadyHasBook) return;
+
+            // 检查是否集齐所有碎片
+            const hasAllFragments = recipe.requiredFragments.every(fid => UserData.hasFragment(fid));
+
+            if (hasAllFragments) {
+                // 添加书籍
+                Library.addBook({
+                    id: recipe.bookId,
+                    title: recipe.title,
+                    content: recipe.fullContent,
+                    cover: recipe.cover,
+                    date: "重组的记忆",
+                    isMystery: true,     
+                    isReadOnly: true
+                });
+
+                // 延迟弹窗提示
+                setTimeout(() => {
+                    StoryManager.showDialogue("📚 记忆重组", 
+                        `手中的碎片仿佛受到了感召，自动拼凑在了一起。<br><br>获得完整书籍：<br><strong style="font-size:1.3em; color:#d84315;">《${recipe.title}》</strong>`
+                    );
+                    
+                    // 如果书架正打开着，刷新它
+                    if(document.getElementById('modal-bookshelf-ui').style.display === 'flex') {
+                        UIRenderer.renderBookshelf();
                     }
-                    // 2. (可选) 继续检查其他事件
-                };
-            }, 300); 
-            
-            return true; 
-        }
-        return false; 
+                }, 2500);
+            }
+        });
     }
 };

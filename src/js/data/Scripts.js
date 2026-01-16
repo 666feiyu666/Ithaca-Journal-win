@@ -79,6 +79,224 @@ export const Scripts = {
             { speaker: "我", text: "（合上信纸）" }
         ]
     },
+
+    // === 信件读后感 (Day 2) ===
+    "mail_reaction_day2": {
+        id: "mail_reaction_day2",
+        title: "读信感想 (Day 2)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
     
-    // ... 你可以继续添加其他 mail_reaction
+    // === 信件读后感 (Day 3) ===
+    "mail_reaction_day3": {
+        id: "mail_reaction_day3",
+        title: "读信感想 (Day 3)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 4) ===
+    "mail_reaction_day4": {
+        id: "mail_reaction_day4",
+        title: "读信感想 (Day 4)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 5) ===
+    "mail_reaction_day5": {
+        id: "mail_reaction_day5",
+        title: "读信感想 (Day 5)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 6) ===
+    "mail_reaction_day6": {
+        id: "mail_reaction_day6",
+        title: "读信感想 (Day 6)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 7) ===
+    "mail_reaction_day7": {
+        id: "mail_reaction_day7",
+        title: "读信感想 (Day 7)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 8) ===
+    "mail_reaction_day8": {
+        id: "mail_reaction_day8",
+        title: "读信感想 (Day 8)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 9) ===
+    "mail_reaction_day9": {
+        id: "mail_reaction_day9",
+        title: "读信感想 (Day 9)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 10) ===
+    "mail_reaction_day10": {
+        id: "mail_reaction_day10",
+        title: "读信感想 (Day 10)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 11) ===
+    "mail_reaction_day11": {
+        id: "mail_reaction_day11",
+        title: "读信感想 (Day 11)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 12) ===
+    "mail_reaction_day12": {
+        id: "mail_reaction_day12",
+        title: "读信感想 (Day 12)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 13) ===
+    "mail_reaction_day13": {
+        id: "mail_reaction_day13",
+        title: "读信感想 (Day 13)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 14) ===
+    "mail_reaction_day14": {
+        id: "mail_reaction_day14",
+        title: "读信感想 (Day 14)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 15) ===
+    "mail_reaction_day15": {
+        id: "mail_reaction_day15",
+        title: "读信感想 (Day 15)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 16) ===
+    "mail_reaction_day16": {
+        id: "mail_reaction_day16",
+        title: "读信感想 (Day 16)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 17) ===
+    "mail_reaction_day17": {
+        id: "mail_reaction_day17",
+        title: "读信感想 (Day 17)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 18) ===
+    "mail_reaction_day18": {
+        id: "mail_reaction_day18",
+        title: "读信感想 (Day 18)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 19) ===
+    "mail_reaction_day19": {
+        id: "mail_reaction_day19",
+        title: "读信感想 (Day 19)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 20) ===
+    "mail_reaction_day20": {
+        id: "mail_reaction_day20",
+        title: "读信感想 (Day 20)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
+
+    // === 信件读后感 (Day 21) ===
+    "mail_reaction_day21": {
+        id: "mail_reaction_day21",
+        title: "读信感想 (Day 21)",
+        type: "reaction",
+        content: [
+            { speaker: "我", text: "什么鬼，是不是寄错了？" },
+            { speaker: "我", text: "（合上信纸）" }
+        ]
+    },
 };
