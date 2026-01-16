@@ -102,6 +102,11 @@ export const UIRenderer = {
         if (room) room.style.display = show ? 'none' : 'block';
         if (map) map.style.display = show ? 'flex' : 'none';
         
+        // ✨ 新增逻辑：触发“城市漂流”成就
+        if (show) {
+             UserData.unlockAchievement('ach_city');
+        }
+
         this.log(show ? "推开门，来到了街道上。" : "回到了房间。");
     }
 };

@@ -253,24 +253,34 @@ export const StoryManager = {
     tryTriggerMailReaction(day, onComplete) {
         const scriptKey = `mail_reaction_day${day}`;
         
-        // ✅ 修复点：这里原来是 this.scripts (undefined)，现在改为 Scripts (正确引用)
-        if (Scripts[scriptKey]) {
-            console.log(`[StoryManager] 触发邮件读后感: ${scriptKey}`);
-            
-            setTimeout(() => {
-                this.startStory(scriptKey);
-
-                this._onStoryComplete = () => {
-                    // 1. 弹出读后感输入框
-                    if (onComplete) {
-                        onComplete();
-                    }
-                    // 2. (可选) 继续检查其他事件
-                };
-            }, 300); 
-            
-            return true; 
+        // 1. 检查剧本是否存在
+        if (!Scripts[scriptKey]) {
+            return false;
         }
-        return false; 
+
+        // 2. ✨ 新增：检查该剧情是否已经播放过/解锁过
+        // 如果 UserData.state.unlockedScripts 包含该 key，说明看过了
+        // 为了防止死循环（看过了剧情但没写读后感），我们这里定义：
+        // "如果已经解锁过，就不再自动播放，直接返回 false 让外部弹出输入框"
+        if (UserData.state.unlockedScripts && UserData.state.unlockedScripts.includes(scriptKey)) {
+             console.log(`[StoryManager] 剧情 ${scriptKey} 已解锁，跳过播放，直接进入下一阶段。`);
+             return false; 
+        }
+        
+        console.log(`[StoryManager] 触发邮件读后感: ${scriptKey}`);
+        
+        // 3. 播放剧情
+        setTimeout(() => {
+            this.startStory(scriptKey);
+
+            // 设置回调，当 endStory() 被调用时执行
+            this._onStoryComplete = () => {
+                if (onComplete) {
+                    onComplete();
+                }
+            };
+        }, 300); 
+        
+        return true; 
     }
 };

@@ -63,11 +63,14 @@ export const CityEvent = {
         // 关闭选择菜单
         document.getElementById('modal-map-selection').style.display = 'none';
 
+        // ✅ 【修复】在此处触发“城市漂流”成就
+        // UserData 内部已经做了去重判断（if hasAchievement then return），所以这里直接调用很安全
+        UserData.unlockAchievement('ach_city');
+
         // 生成随机剧情文本
         const content = this.generateEventText(location);
 
-        // ✨ 核心修改：调用 showSceneDialogue 而不是 showDialogue
-        // 传入 location.bg 让 StoryManager 切换背景
+        // ... 后续逻辑保持不变 ...
         StoryManager.showSceneDialogue(
             `抵达：${location.name.split(' ')[1]}`, 
             content,
@@ -81,7 +84,6 @@ export const CityEvent = {
             }, 1000);
         }
     },
-
     // 生成随机文本 (保持不变)
     generateEventText(loc) {
         const events = [

@@ -4,7 +4,20 @@ import { Journal } from './Journal.js';
 export const ACHIEVEMENTS = {
     'ach_home': { title: '安家', desc: '第一次装修房间', icon: '🏠' },
     'ach_diary': { title: '写日记', desc: '第一次记下思绪', icon: '✍️' },
-    'ach_author': { title: '作家', desc: '第一次出版书籍', icon: '📘' }
+    'ach_author': { title: '作家', desc: '第一次出版书籍', icon: '📘' },
+
+    // === ✨ 新增成就 ===
+    'ach_city': { title: '城市漂流', desc: '第一次离开家前往城市', icon: '🏙️' },
+    'ach_pineapple': { title: 'i菠萝', desc: '累计阅读糖水菠萝的十封信', icon: '🍍' },
+
+    // 收集成就 (Collection)
+    'ach_ithaca_full': { title: '这就是伊萨卡手记', desc: '收集齐四篇《伊萨卡手记》残章', icon: '📖' },
+    
+    // 字数里程碑 (Progress)
+    'ach_word_1k': { title: '积跬步', desc: '日记总字数达到 1,000 字', icon: '📝' },
+    'ach_word_5k': { title: '至千里', desc: '日记总字数达到 5,000 字', icon: '✒️' },
+    'ach_word_10k': { title: '个人史诗', desc: '日记总字数达到 10,000 字', icon: '📜' }
+
 };
 
 export const UserData = {
@@ -63,6 +76,27 @@ export const UserData = {
                 this.state.hasWatchedIntro = false;
             }
         }
+
+        // ============================================================
+        // 🟢 修复补充：旧存档剧情回顾数据迁移
+        // ============================================================
+        if (!this.state.unlockedScripts) this.state.unlockedScripts = [];
+
+        // 1. 如果玩家看过开场白，补录 intro_scene
+        if (this.state.hasWatchedIntro && !this.state.unlockedScripts.includes('intro_scene')) {
+            this.state.unlockedScripts.push('intro_scene');
+            console.log("自动补录剧情回顾: intro_scene");
+        }
+
+        // 2. 如果玩家发现过第一本书，补录 find_first_note
+        // (判断依据可以是 hasFoundMysteryEntry 或者 inventory 里有相关道具，这里假设用 hasFoundMysteryEntry 标记)
+        if (this.state.hasFoundMysteryEntry && !this.state.unlockedScripts.includes('find_first_note')) {
+            this.state.unlockedScripts.push('find_first_note');
+            console.log("自动补录剧情回顾: find_first_note");
+        }
+        
+        // 保存一下迁移后的数据
+        this.save();
         
         // 新手礼包/房间重置检测
         if (!this.state.layout) {
@@ -220,10 +254,18 @@ export const UserData = {
     updateWordCount(delta) {
         if (delta === 0) return;
         if (typeof this.state.totalWords === 'undefined') this.state.totalWords = 0;
+        
         this.state.totalWords += delta;
         if (this.state.totalWords < 0) this.state.totalWords = 0;
+        
         this.save();
         console.log(`[UserData] 字数变更: ${delta} -> 总计: ${this.state.totalWords}`);
+
+        // ✨ 新增逻辑：字数成就检测
+        // 因为 unlockAchievement 内部有去重判断，所以这里可以直接调用
+        if (this.state.totalWords >= 1000) this.unlockAchievement('ach_word_1k');
+        if (this.state.totalWords >= 5000) this.unlockAchievement('ach_word_5k');
+        if (this.state.totalWords >= 10000) this.unlockAchievement('ach_word_10k');
     },
 
     save() {

@@ -1,4 +1,5 @@
 /* src/js/data/Library.js */
+import { UserData } from './UserData.js'; // <--- 引入 UserData 以解锁成就
 
 // 定义系统书籍内容
 const GUIDE_BOOK_I = {
@@ -500,6 +501,20 @@ export const Library = {
 
         // 3. 保存更改到硬盘 (这会把正确的数组格式写回文件，彻底修复坏档)
         this.save(); 
+
+        // ✨ 在初始化结束时也检查一次（防止读档后没触发）
+        this.checkCollectionAchievement();
+    },
+
+    // ✨ 新增辅助方法：检查全收集成就
+    checkCollectionAchievement() {
+        const requiredIds = ["guide_book_part1", "guide_book_part2", "guide_book_part3", "guide_book_part4"];
+        // 检查书架上是否包含了所有 requiredIds
+        const hasAll = requiredIds.every(id => this.books.some(b => b.id === id));
+        
+        if (hasAll) {
+            UserData.unlockAchievement('ach_ithaca_full');
+        }
     },
 
     // === ✨ 新增功能：解锁特定的系统书籍 ===
@@ -518,6 +533,9 @@ export const Library = {
                 this.books.unshift(targetBook); // 加到最前面
                 this.save();
                 console.log(`[Library] 已解锁系统书籍：${targetBook.title}`);
+
+                // ✨ 每次获得新书后，检查是否集齐
+                this.checkCollectionAchievement();
                 return true;
             }
         }
