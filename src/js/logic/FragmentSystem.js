@@ -2,114 +2,12 @@
 import { UserData } from '../data/UserData.js';
 import { Library } from '../data/Library.js';
 import { UIRenderer } from '../ui/UIRenderer.js';
-import { Scripts } from '../data/Scripts.js';
+import { Scripts } from '../data/Scripts.js'; // 确保正确导入
 
 export const StoryManager = {
+    
     // ============================================================
-    // 1. 碎片与合成配置
-    // ============================================================
-    fragmentDB: {
-        "frag_pineapple_01": {
-            title: "待开发日记1",
-            content: "...",
-            origin: "字数里程碑",
-            icon: "assets/images/item/note1.png"
-        },
-        "frag_pineapple_02": {
-            title: "待开发日记2",
-            content: "...",
-            origin: "字数里程碑",
-            icon: "assets/images/item/note1.png"
-        },
-        "frag_pineapple_03": {
-            title: "待开发日记3",
-            content: "...",
-            origin: "高阶里程碑或探索",
-            icon: "assets/images/item/note1.png"
-        }
-    },
-
-    synthesisRecipes: [
-        {
-            bookId: "book_pineapple_diary_complete",
-            title: "糖水菠萝的日记",
-            cover: "assets/images/booksheet/booksheet1.png",
-            requiredFragments: ["frag_pineapple_01", "frag_pineapple_02", "frag_pineapple_03"],
-            fullContent: `# 糖水菠萝的日记 (完整版)\n\n...`
-        }
-    ],
-
-    milestones: [
-        { threshold: 20,   fragmentId: "frag_pineapple_01" },
-        { threshold: 200,  fragmentId: "frag_pineapple_02" },
-        { threshold: 2000, fragmentId: "frag_pineapple_03" }
-    ],
-
-    // ============================================================
-    // 2. 核心逻辑
-    // ============================================================
-
-    checkWordCountMilestones() {
-        const currentWords = UserData.state.totalWords || 0;
-        this.milestones.forEach(ms => {
-            if (currentWords >= ms.threshold) {
-                this.unlockFragment(ms.fragmentId);
-            }
-        });
-    },
-
-    unlockFragment(fragmentId) {
-        const isNew = UserData.addFragment(fragmentId);
-        if (isNew) {
-            const fragInfo = this.fragmentDB[fragmentId];
-            if (!fragInfo) return;
-
-            const room = document.getElementById('scene-room');
-            if(room) {
-                room.classList.add('shake-room');
-                setTimeout(() => room.classList.remove('shake-room'), 500);
-            }
-
-            this.showDialogue("✨ 发现碎片", 
-                `你捡到了一张泛黄的纸片：<br><strong style="font-size:1.1em;">《${fragInfo.title}》</strong><br><br>` + 
-                `<span style="color:#666; font-size:0.9em; font-style:italic;">"${fragInfo.content.substring(0, 25)}..."</span>`
-            );
-            this.checkSynthesis();
-        }
-    },
-
-    checkSynthesis() {
-        this.synthesisRecipes.forEach(recipe => {
-            const alreadyHasBook = Library.getAll().find(b => b.id === recipe.bookId);
-            if (alreadyHasBook) return;
-
-            const hasAllFragments = recipe.requiredFragments.every(fid => UserData.hasFragment(fid));
-
-            if (hasAllFragments) {
-                Library.addBook({
-                    id: recipe.bookId,
-                    title: recipe.title,
-                    content: recipe.fullContent,
-                    cover: recipe.cover,
-                    date: "重组的记忆",
-                    isMystery: true,     
-                    isReadOnly: true
-                });
-
-                setTimeout(() => {
-                    this.showDialogue("📚 记忆重组", 
-                        `手中的碎片仿佛受到了感召，自动拼凑在了一起。<br><br>获得完整书籍：<br><strong style="font-size:1.3em; color:#d84315;">《${recipe.title}》</strong>`
-                    );
-                    if(document.getElementById('modal-bookshelf-ui').style.display === 'flex') {
-                        UIRenderer.renderBookshelf();
-                    }
-                }, 2500);
-            }
-        });
-    },
-
-    // ============================================================
-    // 3. UI 与场景控制
+    // 1. UI 与场景控制 (供 FragmentSystem 和剧情系统共用)
     // ============================================================
 
     showDialogue(title, htmlContent) {
@@ -185,13 +83,16 @@ export const StoryManager = {
         if (bgImg) { bgImg.style.display = 'block'; bgImg.src = 'assets/images/city/street0.png'; }
     },
 
+    // ============================================================
+    // 2. 剧情播放核心 (State Management)
+    // ============================================================
+
     currentIndex: 0,
     activeScript: null,
-    // 记录当前播放的脚本ID，方便记录日志（可选）
     activeScriptId: null,
 
     /**
-     * 🟢 核心重构：尝试触发书架剧情
+     * 🟢 尝试触发书架剧情 (发现第一本书)
      */
     tryTriggerBookshelfStory() {
         if (UserData.state.hasFoundMysteryEntry || !UserData.state.hasWatchedIntro) {
@@ -220,11 +121,7 @@ export const StoryManager = {
             // 提示文案
             UIRenderer.log("📖 你发现了《伊萨卡手记 I》");
 
-            // 🔥 3. 修复：使用 ModalManager 打开书架，并强制刷新渲染
-            // ModalManager.open('modal-bookshelf-ui');
-            // 暂时不知道如何修复自动打开书架后书不显示的问题
-
-            // 延迟一丢丢渲染，确保 DOM 已经完全可见 (双重保险)
+            // 延迟刷新书架
             setTimeout(() => {
                 UIRenderer.renderBookshelf();
             }, 50);
@@ -233,8 +130,10 @@ export const StoryManager = {
         return true;
     },
 
+    /**
+     * 开始播放一段剧本
+     */
     startStory(scriptKey) {
-        // 👈 3. 修改获取方式：从 Scripts 数据中获取
         const scriptData = Scripts[scriptKey];
         
         if (!scriptData) {
@@ -242,15 +141,13 @@ export const StoryManager = {
             return;
         }
 
-        this.activeScript = scriptData.content; // 获取内容数组
-        this.activeScriptId = scriptKey;        // 记录ID
+        this.activeScript = scriptData.content; 
+        this.activeScriptId = scriptKey;      
         this.currentIndex = 0;
         
-        // 记录该剧情已解锁 (方便ReviewLog)
-        // 我们利用 UserData 记录一个 unlockedScripts 列表
+        // ✅ 核心修复：记录该剧情已解锁 (方便ReviewLog显示)
         UserData.unlockScript(scriptKey); 
 
-        // ... (后续 UI 显示逻辑保持不变) ...
         const scene = document.getElementById('scene-intro');
         scene.style.display = 'flex';
         scene.style.opacity = 1;
@@ -268,6 +165,7 @@ export const StoryManager = {
         document.getElementById('dialogue-speaker').innerText = line.speaker;
         document.getElementById('dialogue-text').innerText = line.text;
         
+        // 简单的震动特效
         if (line.text.includes("用力拉拽")) {
             const room = document.getElementById('scene-room');
             if(room) {
@@ -290,8 +188,7 @@ export const StoryManager = {
     },
 
     /**
-     * 🟢 核心重构：通用的剧情结束处理
-     * 不再包含任何特定书籍的逻辑
+     * 🟢 剧情结束处理
      */
     endStory() {
         const scene = document.getElementById('scene-intro');
@@ -303,7 +200,7 @@ export const StoryManager = {
         const box = document.getElementById('intro-dialogue-box');
         box.onclick = null; 
 
-        // 执行回调 (例如：弹出读后感、解锁书籍、刷新UI等)
+        // 执行回调
         if (this._onStoryComplete) {
             this._onStoryComplete();
             this._onStoryComplete = null;
@@ -311,25 +208,22 @@ export const StoryManager = {
     },
 
     // ============================================================
-    // 每日特殊事件检测 (同样修复这里，防止包裹事件也出现一样的问题)
+    // 3. 每日事件与邮件交互
     // ============================================================
+    
     checkDailyEvents() {
         const day = UserData.state.day;
 
-        // 通用回调生成器
+        // 包裹事件回调生成器
         const createPackageCallback = (bookId, logText) => {
              return () => {
-                Library.unlockSystemBook(bookId); // 这里的 id 是 2, 3, 4
+                Library.unlockSystemBook(bookId); 
                 UIRenderer.log(logText);
                 
-                // 🔥 修复：如果书架已经打开，就刷新它；没打开就不管，等用户自己打开
                 const bookshelfModal = document.getElementById('modal-bookshelf-ui');
                 if(bookshelfModal && bookshelfModal.style.display !== 'none') {
                     UIRenderer.renderBookshelf();
-                } else {
-                    // 如果你想让包裹事件结束后自动弹开书架，解开下面这行的注释：
-                    // ModalManager.open('modal-bookshelf-ui'); UIRenderer.renderBookshelf();
-                }
+                } 
             };
         };
 
@@ -353,28 +247,25 @@ export const StoryManager = {
     },
 
     /**
-     * 尝试触发邮件读后感
+     * 🟢 尝试触发邮件读后感
+     * (已修复之前的变量名错误)
      */
     tryTriggerMailReaction(day, onComplete) {
         const scriptKey = `mail_reaction_day${day}`;
         
-        // 🔴 错误代码 (原代码):
-        // if (this.scripts[scriptKey]) { ... }
-        
-        // ✅ 【新增修复 2】: 修正变量名，使用导入的 Scripts 对象
+        // ✅ 修复点：这里原来是 this.scripts (undefined)，现在改为 Scripts (正确引用)
         if (Scripts[scriptKey]) {
             console.log(`[StoryManager] 触发邮件读后感: ${scriptKey}`);
             
             setTimeout(() => {
                 this.startStory(scriptKey);
 
-                // 🔥 关键：设置剧情结束后的回调
                 this._onStoryComplete = () => {
-                    // 1. 先执行传入的回调（即弹出读后感）
+                    // 1. 弹出读后感输入框
                     if (onComplete) {
                         onComplete();
                     }
-                    // 2. 然后再检查有没有其他事件
+                    // 2. (可选) 继续检查其他事件
                 };
             }, 300); 
             
