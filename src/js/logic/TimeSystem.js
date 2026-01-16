@@ -1,50 +1,57 @@
 /* src/js/logic/TimeSystem.js */
 import { UserData } from '../data/UserData.js';
+import { HUDRenderer } from '../ui/HUDRenderer.js';
 
 export const TimeSystem = {
     init() {
-        const now = new Date();
-
-        // 1. 如果是新存档 (没有记录过起始时间)
-        if (!UserData.state.startDate) {
-            console.log("Welcome to Ithaca! 记录初始时间...");
-            UserData.state.startDate = now.getTime();
-            UserData.state.day = 1;
-            UserData.save();
-        } 
-        // 2. 如果是老存档，计算时间差
-        else {
-            const start = new Date(UserData.state.startDate);
-            const current = new Date();
-            // const current = new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 1); // 【测试用】时间加速：每次启动游戏，时间快进一天
-            
-            // 核心算法：消除"时分秒"的影响，按自然日计算
-            // 比如：昨天 23:00 建号，今天 08:00 登录 -> 应该算 Day 2
-            start.setHours(0,0,0,0);
-            current.setHours(0,0,0,0);
-            
-            const diffTime = current - start;
-            // 毫秒转天数，向下取整
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
-            
-            // Day 1 是基础，所以要 +1 (差值0天 = Day 1)
-            const calculatedDay = diffDays + 1;
-            
-            // 只有当天数发生变化时才保存，避免频繁写入
-            if (UserData.state.day !== calculatedDay) {
-                console.log(`时间流逝... 从 Day ${UserData.state.day} -> Day ${calculatedDay}`);
-                UserData.state.day = calculatedDay;
-                UserData.save();
-            }
-        }
-        
-        console.log(`[TimeSystem] 当前时间：${now.toLocaleString()} | 游戏天数：Day ${UserData.state.day}`);
+        this.checkDayProgression();
     },
-    
-    // 获取当前是一天中的哪个时段 (用于将来做白天黑夜切换)
-    getTimeOfDay() {
-        const hour = new Date().getHours();
-        if (hour >= 6 && hour < 18) return 'day';
-        return 'night';
+
+    /**
+     * 核心逻辑：检查日期推进
+     * 规则：
+     * 1. 每天只推进一次 (Day + 1)。
+     * 2. 如果玩家弃坑了3天再回来，游戏内只过1天 (Day + 1)，而不是跳过3天。
+     * 3. 保证剧情是连续的。
+     */
+    checkDayProgression() {
+        const now = new Date();
+        // 获取今天的日期字符串，例如 "2025-12-12"
+        const todayStr = now.toLocaleDateString(); 
+        
+        // 获取上次登录的日期和当前天数
+        const lastLoginDate = UserData.state.lastLoginDate;
+        let currentDay = UserData.state.day;
+
+        // 情况 A: 第一次玩 (lastLoginDate 为空)
+        if (!lastLoginDate) {
+            console.log("[TimeSystem] 🌟 首次登录，初始化为 Day 1");
+            UserData.state.day = 1;
+            UserData.state.lastLoginDate = todayStr;
+            UserData.save();
+            return;
+        }
+
+        // 情况 B: 之前登录过，判断是不是“新的一天”
+        if (todayStr !== lastLoginDate) {
+            // 是新的一天！推进游戏天数
+            currentDay += 1;
+            console.log(`[TimeSystem] 🌅 新的一天！Day ${UserData.state.day} -> Day ${currentDay}`);
+
+            UserData.state.day = currentDay;
+            UserData.state.lastLoginDate = todayStr; // 更新最后登录时间为今天
+            
+            // 重置一些每日状态 (如果有的话，比如每日抽奖标志)
+            // UserData.state.hasDailyLottery = false; 
+
+            UserData.save();
+            
+            // 可以弹个提示
+            setTimeout(() => {
+                HUDRenderer.log(`📅 进入第 ${currentDay} 天`);
+            }, 1000);
+        } else {
+            console.log(`[TimeSystem] ☕ 还是同一天 (Day ${currentDay})，无需推进。`);
+        }
     }
 };

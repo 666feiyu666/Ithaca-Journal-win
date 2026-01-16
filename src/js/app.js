@@ -8,6 +8,8 @@ import { TimeSystem } from './logic/TimeSystem.js';
 import { DragManager } from './logic/DragManager.js';   
 import { UIRenderer } from './ui/UIRenderer.js';
 import { StoryManager } from './logic/StoryManager.js';
+import { ReviewRenderer } from './ui/ReviewRenderer.js'; // ✨ 新增：引入回顾渲染器
+
 
 // 2. 程序入口
 async function init() {
@@ -26,6 +28,10 @@ async function init() {
     
     // 初始化 UI (现在 UI 内部会自动绑定所有事件)
     UIRenderer.init();
+
+    // ✨ 新增：初始化回顾功能 (绑定左下角按钮事件)
+    // 必须在 UIRenderer.init() 之后，确保 DOM 已经就绪
+    ReviewRenderer.init();
 
     // 播放剧情
     IntroScene.init(); 

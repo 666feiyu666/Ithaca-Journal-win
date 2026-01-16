@@ -20,39 +20,132 @@ export const BookshelfRenderer = {
     },
 
     /**
-     * 主渲染函数：渲染书籍列表 + 底部功能按钮
+     * 主渲染函数：强制渲染为两排
      */
     render() {
         const container = document.getElementById('bookshelf');
         if (!container) return;
         
         container.innerHTML = "";
-        const books = Library.getAll();
+        
+        // 1. 获取并分类书籍
+        const allBooks = Library.getAll();
+        
+        // 第一排：玩家创作 (非只读，非神秘)
+        const row1Books = allBooks.filter(b => !b.isReadOnly && !b.isMystery);
+        
+        // 第二排：系统/剧情书籍 (只读 或 神秘)
+        const row2Books = allBooks.filter(b => b.isReadOnly || b.isMystery);
+
+        // 2. 排序逻辑：确保第二排的系统书按顺序排列 (I, II, III, IV)
+        row2Books.sort((a, b) => {
+            if (a.id < b.id) return -1;
+            if (a.id > b.id) return 1;
+            return 0;
+        });
+
+        // 3. 渲染第一排 (上层)
+        this.renderRow(container, row1Books, {
+            minHeight: '130px', // 保证即使没书也有高度
+            borderBottom: '12px solid #8d6e63', // 木板隔层效果
+            paddingBottom: '0px',
+            alignItems: 'flex-end' // 书籍底部对齐
+        });
+
+        // 4. 渲染第二排 (下层)
+        this.renderRow(container, row2Books, {
+            minHeight: '130px',
+            paddingTop: '15px',
+            alignItems: 'flex-end'
+        });
+
+        // 渲染右下角的丢弃按钮
+        this.renderTrashButton();
+    },
+
+    /**
+     * 辅助函数：渲染单行书架
+     */
+    renderRow(container, books, styleOptions = {}) {
+        const rowDiv = document.createElement('div');
+        
+        // 基础样式
+        rowDiv.style.cssText = `
+            display: flex;
+            flex-wrap: wrap; /* 如果一行放不下，自动换行 */
+            gap: 15px;
+            padding-left: 10px;
+            padding-right: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        `;
+
+        // 应用传入的自定义样式
+        Object.assign(rowDiv.style, styleOptions);
 
         if (books.length === 0) {
-            container.innerHTML = `<div style="text-align:center; color:#ccc; margin-top:50px;">书架上空空如也</div>`;
+            // 如果这一排没书，可以留白，或者显示淡淡的提示
+            // rowDiv.innerHTML = `<div style="color:rgba(0,0,0,0.1); font-size:12px; margin:auto;">此处空置</div>`;
         } else {
             books.forEach(book => {
-                const div = document.createElement('div');
-                div.className = 'book-item-container'; // 请确保 CSS 中有对应样式，或沿用之前的 book-item
-                
-                // 神秘书籍特效
-                if(book.isMystery) {
-                    div.style.filter = "sepia(0.2) drop-shadow(0 0 5px gold)";
-                }
-                
-                div.innerHTML = `
-                    <img src="${book.cover || 'assets/images/booksheet/booksheet1.png'}" class="book-cover-img" style="width:100%; height:auto; display:block;">
-                    <div class="book-title-text" style="text-align:center; font-size:12px; margin-top:5px;">${book.title}</div>
-                `;
-                
-                div.onclick = () => this.openBook(book);
-                container.appendChild(div);
+                const item = this.createBookElement(book);
+                rowDiv.appendChild(item);
             });
         }
 
-        // ✨ 渲染右下角的丢弃按钮 (集成之前的逻辑)
-        this.renderTrashButton();
+        container.appendChild(rowDiv);
+    },
+
+    /**
+     * 创建单本书的 DOM
+     */
+    createBookElement(book) {
+        const div = document.createElement('div');
+        div.className = 'book-item-container'; 
+        
+        div.style.cssText = `
+            width: 80px; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            flex-shrink: 0;
+            position: relative;
+            margin-bottom: 5px; /* 书籍底部留一点空隙 */
+        `;
+        
+        // 特效处理
+        if(book.isMystery) {
+            div.style.filter = "drop-shadow(0 0 3px gold)";
+        }
+
+        div.onmouseover = () => {
+            div.style.transform = "translateY(-5px) scale(1.05)";
+            div.style.zIndex = "10";
+        };
+        div.onmouseout = () => {
+            div.style.transform = "translateY(0) scale(1)";
+            div.style.zIndex = "1";
+        };
+        
+        // 书籍封面与标题
+        div.innerHTML = `
+            <img src="${book.cover || 'assets/images/booksheet/booksheet1.png'}" class="book-cover-img" style="width:100%; height:auto; display:block; border-radius: 2px; box-shadow: 3px 3px 6px rgba(0,0,0,0.3);">
+            <div class="book-title-text" style="
+                text-align: center; 
+                font-size: 12px; 
+                margin-top: 6px; 
+                color: #5d4037; 
+                line-height: 1.2;
+                overflow: hidden; 
+                text-overflow: ellipsis; 
+                display: -webkit-box; 
+                -webkit-line-clamp: 2; 
+                -webkit-box-orient: vertical;
+                font-family: serif;
+            ">${book.title}</div>
+        `;
+        
+        div.onclick = () => this.openBook(book);
+        return div;
     },
 
     /**

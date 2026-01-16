@@ -1,5 +1,5 @@
 /* main.js */
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -88,6 +88,31 @@ app.whenReady().then(() => {
             console.error("写入操作失败:", err);
             return false;
         }
+    });
+
+    // C. 消息弹窗 (替代 alert)
+    ipcMain.handle('dialog:message', async (event, options) => {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        return dialog.showMessageBox(win, {
+            type: options.type || 'info',
+            title: options.title || '提示',
+            message: options.message,
+            buttons: ['确定']
+        });
+    });
+
+    // D. 确认弹窗 (替代 confirm)
+    ipcMain.handle('dialog:confirm', async (event, options) => {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        const result = await dialog.showMessageBox(win, {
+            type: 'question',
+            title: options.title || '确认',
+            message: options.message,
+            buttons: ['确定', '取消'],
+            defaultId: 0,
+            cancelId: 1
+        });
+        return result.response === 0; // 返回 true (点击了确定) 或 false
     });
 
     createWindow();

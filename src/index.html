@@ -132,6 +132,24 @@
             </div>
     </div>
 
+    <button id="btn-review-log" class="hud-btn-bottom-left" title="记忆回溯">
+        📄
+    </button>
+
+    <div id="modal-review-log" class="modal-overlay hidden">
+        <div class="modal-window paper-style">
+            <div class="modal-header">
+                <h2>🕰️ 记忆回溯</h2>
+                <button class="btn-close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="hint-text">点击日期查看当时的信件与对话记录。</p>
+                <div id="review-list-container" class="scroll-container">
+                    </div>
+            </div>
+        </div>
+    </div>
+
     <div class="top-right-toolbar">
         <button id="btn-icon-home" class="icon-btn" title="回到房间">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

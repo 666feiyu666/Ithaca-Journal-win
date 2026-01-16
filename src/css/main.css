@@ -777,3 +777,102 @@ body.interaction-locked .dialogue-box-container {
 #editor-area::-webkit-scrollbar-thumb:hover {
     background-color: rgba(93, 64, 55, 0.4); /* 使用主题棕色 #5d4037 的半透明版本 */
 }
+
+/* 左下角按钮 */
+.hud-btn-bottom-left {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 24px;
+    border: 2px solid #d84315;
+    cursor: pointer;
+    z-index: 100;
+    transition: transform 0.2s;
+}
+
+.hud-btn-bottom-left:hover {
+    transform: scale(1.1) rotate(-10deg);
+    background: rgba(216, 67, 21, 0.9);
+}
+
+/* 回顾弹窗样式 */
+.paper-style {
+    background: #fdfbf7; /* 米色纸张背景 */
+    color: #333;
+    max-width: 600px;
+    width: 90%;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.review-day-item {
+    border-bottom: 1px dashed #ccc;
+    margin-bottom: 10px;
+}
+
+.review-header {
+    padding: 15px;
+    background: rgba(216, 67, 21, 0.1);
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 5px;
+}
+
+.review-header:hover {
+    background: rgba(216, 67, 21, 0.2);
+}
+
+.review-content {
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.5);
+    animation: fadeIn 0.3s;
+}
+
+.review-block {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.block-title {
+    font-size: 0.9em;
+    color: #888;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+}
+
+.block-text {
+    font-family: 'Georgia', serif;
+    line-height: 1.6;
+}
+
+.block-reply {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dotted #ccc;
+    font-style: italic;
+    color: #555;
+    font-size: 0.9em;
+}
+
+.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

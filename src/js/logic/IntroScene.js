@@ -2,22 +2,18 @@
 import { UserData } from '../data/UserData.js';
 import { UIRenderer } from '../ui/UIRenderer.js';
 import { DragManager } from './DragManager.js'; // 引入拖拽管理器，用于自动开启装修模式
+import { Scripts } from '../data/Scripts.js';
 
 export const IntroScene = {
-    // 🎭 更新后的剧本：毕业生租房篇
-    script: [
-        { speaker: "我", text: "（拖着行李箱的声音）呼……终于到了。" },
-        { speaker: "我", text: "看着手机上的导航，应该就是这里没错了。" },
-        { speaker: "我", text: "刚毕业也没什么积蓄，能在寸土寸金的城市里找到这个租金合适的单间，已经很幸运了。" },
-        { speaker: "我", text: "虽然房东在电话里说房子是空的，什么都没有……" },
-        { speaker: "我", text: "但只要用心布置一下，这里就是我在这个陌生城市的第一个家了。" },
-    ],
-    
     currentIndex: 0,
     isTyping: false,
     timer: null,
+    currentScript: null,
 
     init() {
+        // 👈 加载剧本
+        this.currentScript = Scripts["intro_scene"].content;
+
         const scene = document.getElementById('scene-intro');
         const room = document.getElementById('scene-room');
         
@@ -71,7 +67,7 @@ export const IntroScene = {
             return;
         }
         this.currentIndex++;
-        if (this.currentIndex >= this.script.length) {
+        if (this.currentIndex >= this.currentScript.length) {
             this.endIntro();
         } else {
             this.renderLine();
@@ -79,7 +75,7 @@ export const IntroScene = {
     },
 
     renderLine() {
-        const line = this.script[this.currentIndex];
+        const line = this.currentScript[this.currentIndex];
         document.getElementById('dialogue-speaker').innerText = line.speaker;
         const textEl = document.getElementById('dialogue-text');
         textEl.innerText = ""; 
@@ -101,7 +97,7 @@ export const IntroScene = {
     finishTyping() {
         clearInterval(this.timer);
         this.isTyping = false;
-        document.getElementById('dialogue-text').innerText = this.script[this.currentIndex].text;
+        document.getElementById('dialogue-text').innerText = this.currentScript[this.currentIndex].text;
     },
 
     // 🎬 剧情结束 -> 引导开始

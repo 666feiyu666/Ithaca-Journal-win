@@ -6,7 +6,7 @@ export const ModalManager = {
         'modal-mailbox', 'modal-letter', 'modal-desk', 
         'modal-bookshelf-ui', 'modal-shop', 'modal-backpack',
         'workbench-modal', 'reader-modal', 'modal-map-selection',
-        'modal-create-notebook', 'modal-achievements'
+        'modal-create-notebook', 'modal-achievements', 'modal-review-log'
     ],
 
     init() {

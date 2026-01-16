@@ -31,6 +31,7 @@ export const UserData = {
         
         // ✨ 新增：标记彩蛋书是否已领取
         hasReceivedEasterEggBook: false,
+        unlockedScripts: [], // 已解锁的特殊剧情ID列表
     },
 
     // 初始化
@@ -137,6 +138,12 @@ export const UserData = {
         if (!this.state.mailReplies) this.state.mailReplies = {};
         this.state.mailReplies[day] = content;
         this.save();
+    },
+
+    // ✨ 修复：补充缺失的 getReply 方法
+    getReply(day) {
+        if (!this.state.mailReplies) return null;
+        return this.state.mailReplies[day] || null;
     },
 
     // ✨ 新增方法：获取所有回复（用于生成书）
@@ -325,5 +332,16 @@ export const UserData = {
     // 检查是否拥有某成就
     hasAchievement(achId) {
         return this.state.achievements && this.state.achievements.includes(achId);
+    },
+
+    // ============================================================
+    // 剧情回顾 (Scripts Review)
+    // ============================================================
+    unlockScript(scriptId) {
+    if (!this.state.unlockedScripts) this.state.unlockedScripts = [];
+        if (!this.state.unlockedScripts.includes(scriptId)) {
+            this.state.unlockedScripts.push(scriptId);
+            this.save();
+        }
     }
 };
