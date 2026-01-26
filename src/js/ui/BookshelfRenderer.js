@@ -1,287 +1,322 @@
 /* src/js/ui/BookshelfRenderer.js */
 import { Library } from '../data/Library.js';
-import { UIRenderer } from './UIRenderer.js'; // 用于显示 Log
+import { UIRenderer } from './UIRenderer.js'; 
 import { ModalManager } from './ModalManager.js';
 import { marked } from '../libs/marked.esm.js';
 
 export const BookshelfRenderer = {
     currentBookId: null,
+    isTrashMode: false, // ✨ 状态标记：当前是否在查看回收站
 
     init() {
         this.bindEvents();
+        
+        // 绑定书架打开按钮
+        const btnOpen = document.getElementById('btn-open-bookshelf');
+        if (btnOpen) {
+            btnOpen.onclick = () => {
+                // 每次打开书架时，默认重置为正常视图
+                this.isTrashMode = false;
+                ModalManager.open('bookshelf-modal');
+                this.render();
+            };
+        }
+
+        // 绑定关闭按钮 (防止 HTML 中没有绑定)
+        const closeBtn = document.querySelector('#bookshelf-modal .close');
+        if(closeBtn) {
+            closeBtn.onclick = () => ModalManager.close('bookshelf-modal');
+        }
     },
 
     bindEvents() {
-        // 绑定阅读器内部的交互按钮
         this._bindClick('btn-delete-book', () => this.handleDeleteBook());
         this._bindClick('btn-edit-book', () => this.toggleEditMode(true));
         this._bindClick('btn-cancel-edit', () => this.toggleEditMode(false));
         this._bindClick('btn-save-book', () => this.handleSaveBook());
+        this._bindClick('btn-export-book', () => this.handleExportBook());
     },
 
     /**
-     * 主渲染函数：强制渲染为两排
+     * 主渲染函数
      */
     render() {
-        const container = document.getElementById('bookshelf');
-        if (!container) return;
+        // 兼容性查找：优先找 content 容器，找不到找老容器
+        const container = document.getElementById('bookshelf-content') || document.getElementById('bookshelf');
+        if (!container) return; 
         
         container.innerHTML = "";
         
-        // 1. 获取并分类书籍
-        const allBooks = Library.getAll();
-        
-        // 第一排：玩家创作 (非只读，非神秘)
-        const row1Books = allBooks.filter(b => !b.isReadOnly && !b.isMystery);
-        
-        // 第二排：系统/剧情书籍 (只读 或 神秘)
-        const row2Books = allBooks.filter(b => b.isReadOnly || b.isMystery);
+        // 1. 渲染顶部工具栏 (显示标题 + 切换按钮)
+        this.renderToolbar(container);
 
-        // 2. 排序逻辑：确保第二排的系统书按顺序排列 (I, II, III, IV)
-        row2Books.sort((a, b) => {
-            if (a.id < b.id) return -1;
-            if (a.id > b.id) return 1;
-            return 0;
-        });
-
-        // 3. 渲染第一排 (上层)
-        this.renderRow(container, row1Books, {
-            minHeight: '130px', // 保证即使没书也有高度
-            borderBottom: '12px solid #8d6e63', // 木板隔层效果
-            paddingBottom: '0px',
-            alignItems: 'flex-end' // 书籍底部对齐
-        });
-
-        // 4. 渲染第二排 (下层)
-        this.renderRow(container, row2Books, {
-            minHeight: '130px',
-            paddingTop: '15px',
-            alignItems: 'flex-end'
-        });
-
-        // 渲染右下角的丢弃按钮
-        this.renderTrashButton();
+        // 2. 根据模式分发渲染逻辑
+        if (this.isTrashMode) {
+            this.renderTrashView(container);
+        } else {
+            this.renderNormalView(container);
+        }
     },
 
     /**
-     * 辅助函数：渲染单行书架
+     * 渲染顶部工具栏
      */
-    renderRow(container, books, styleOptions = {}) {
-        const rowDiv = document.createElement('div');
+    renderToolbar(container) {
+        const toolbar = document.createElement('div');
+        toolbar.style.cssText = "width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding:0 5px; box-sizing:border-box;";
+
+        // 更新 Modal 标题
+        const titleEl = document.querySelector('#bookshelf-modal h2');
+        if (titleEl) {
+            titleEl.innerText = this.isTrashMode ? "🗑️ 废纸篓" : "📚 我的书架";
+        }
+
+        // 左侧占位 (保持布局平衡)
+        const leftSpan = document.createElement('span');
+        leftSpan.innerText = this.isTrashMode ? "这里存放着被遗弃的文字..." : "";
+        leftSpan.style.cssText = "font-size:12px; color:#999; font-style:italic;";
+
+        // 右侧切换按钮
+        const toggleBtn = document.createElement('button');
+        toggleBtn.innerHTML = this.isTrashMode ? "⬅️ 返回书架" : "🗑️ 查看废纸篓";
+        toggleBtn.style.cssText = `
+            cursor: pointer; 
+            font-size: 12px; 
+            color: #555; 
+            padding: 5px 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 15px; 
+            background: #f9f9f9;
+            transition: all 0.2s;
+        `;
+        toggleBtn.onmouseover = () => toggleBtn.style.background = "#eee";
+        toggleBtn.onmouseout = () => toggleBtn.style.background = "#f9f9f9";
         
-        // 基础样式
+        toggleBtn.onclick = () => {
+            this.isTrashMode = !this.isTrashMode;
+            this.render(); // 切换模式并重绘
+        };
+        
+        toolbar.appendChild(leftSpan);
+        toolbar.appendChild(toggleBtn);
+        container.appendChild(toolbar);
+    },
+
+    /**
+     * 渲染正常视图
+     */
+    renderNormalView(container) {
+        const allBooks = Library.getAll(); // 获取所有未删除的书
+        
+        // 第一排：玩家创作
+        const row1Books = allBooks.filter(b => !b.isReadOnly && !b.isMystery);
+        // 第二排：系统/剧情书籍
+        const row2Books = allBooks.filter(b => b.isReadOnly || b.isMystery);
+
+        // 排序系统书
+        row2Books.sort((a, b) => a.id.localeCompare(b.id));
+
+        // 渲染第一排 (上层)
+        this.renderRow(container, row1Books, {
+            minHeight: '130px', 
+            borderBottom: '12px solid #8d6e63', // 木板隔层
+            marginBottom: '10px',
+            alignItems: 'flex-end' 
+        });
+
+        // 渲染第二排 (下层)
+        this.renderRow(container, row2Books, {
+            minHeight: '130px',
+            alignItems: 'flex-end'
+        });
+    },
+
+    /**
+     * 渲染回收站视图
+     */
+    renderTrashView(container) {
+        const trashBooks = Library.getTrash(); // 获取已删除的书
+
+        if (trashBooks.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = "width:100%; text-align:center; color:#ccc; margin-top:60px; font-size:14px;";
+            empty.innerHTML = "废纸篓是空的。<br><span style='font-size:12px; margin-top:5px; display:block;'>就像从未写坏过任何故事一样。</span>";
+            container.appendChild(empty);
+            return;
+        }
+
+        // 垃圾桶可以只有一排，或者多排自动换行
+        this.renderRow(container, trashBooks, {
+            minHeight: '300px',
+            alignItems: 'flex-start',
+            alignContent: 'flex-start',
+            justifyContent: 'flex-start',
+            paddingTop: '10px'
+        }, true); // isTrashRow = true
+    },
+
+    /**
+     * 通用行渲染
+     */
+    renderRow(container, books, styleOptions = {}, isTrashRow = false) {
+        const rowDiv = document.createElement('div');
         rowDiv.style.cssText = `
             display: flex;
-            flex-wrap: wrap; /* 如果一行放不下，自动换行 */
-            gap: 15px;
-            padding-left: 10px;
-            padding-right: 10px;
+            flex-wrap: wrap; 
+            gap: 20px;
+            padding: 0 10px;
             width: 100%;
             box-sizing: border-box;
         `;
-
-        // 应用传入的自定义样式
         Object.assign(rowDiv.style, styleOptions);
 
-        if (books.length === 0) {
-            // 如果这一排没书，可以留白，或者显示淡淡的提示
-            // rowDiv.innerHTML = `<div style="color:rgba(0,0,0,0.1); font-size:12px; margin:auto;">此处空置</div>`;
-        } else {
-            books.forEach(book => {
-                const item = this.createBookElement(book);
-                rowDiv.appendChild(item);
-            });
-        }
+        books.forEach(book => {
+            const item = this.createBookElement(book, isTrashRow);
+            rowDiv.appendChild(item);
+        });
 
         container.appendChild(rowDiv);
     },
 
     /**
-     * 创建单本书的 DOM
+     * 创建书籍 DOM
      */
-    createBookElement(book) {
+    createBookElement(book, isTrashItem = false) {
         const div = document.createElement('div');
         div.className = 'book-item-container'; 
         
         div.style.cssText = `
             width: 80px; 
             cursor: pointer; 
-            transition: all 0.2s;
+            transition: transform 0.2s;
             flex-shrink: 0;
             position: relative;
-            margin-bottom: 5px; /* 书籍底部留一点空隙 */
+            margin-bottom: 5px;
         `;
         
-        // 特效处理
+        // 视觉处理
         if(book.isMystery) {
-            div.style.filter = "drop-shadow(0 0 3px gold)";
+            div.style.filter = "drop-shadow(0 0 5px gold)";
+        }
+        if (isTrashItem) {
+             div.style.filter = "grayscale(100%) opacity(0.7)"; // 灰色+半透明
         }
 
+        // 交互效果
         div.onmouseover = () => {
-            div.style.transform = "translateY(-5px) scale(1.05)";
             div.style.zIndex = "10";
+            if (!isTrashItem) {
+                // 只有正常书才有跳动效果，垃圾桶里的书显得“死气沉沉”一点
+                div.style.transform = "translateY(-5px) scale(1.05)";
+            } else {
+                div.style.opacity = "1"; // 垃圾桶里的书悬停变亮
+            }
         };
         div.onmouseout = () => {
-            div.style.transform = "translateY(0) scale(1)";
             div.style.zIndex = "1";
+            div.style.transform = "translateY(0) scale(1)";
+            if (isTrashItem) div.style.filter = "grayscale(100%) opacity(0.7)";
         };
         
-        // 书籍封面与标题
         div.innerHTML = `
-            <img src="${book.cover || 'assets/images/booksheet/booksheet1.png'}" class="book-cover-img" style="width:100%; height:auto; display:block; border-radius: 2px; box-shadow: 3px 3px 6px rgba(0,0,0,0.3);">
-            <div class="book-title-text" style="
-                text-align: center; 
-                font-size: 12px; 
-                margin-top: 6px; 
-                color: #5d4037; 
-                line-height: 1.2;
-                overflow: hidden; 
-                text-overflow: ellipsis; 
-                display: -webkit-box; 
-                -webkit-line-clamp: 2; 
-                -webkit-box-orient: vertical;
+            <img src="${book.cover || 'assets/images/booksheet/booksheet1.png'}" style="width:100%; display:block; border-radius: 2px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
+            <div style="
+                text-align: center; font-size: 12px; margin-top: 6px; color: #5d4037; 
+                line-height: 1.2; overflow: hidden; text-overflow: ellipsis; 
+                display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
                 font-family: serif;
             ">${book.title}</div>
         `;
         
-        div.onclick = () => this.openBook(book);
+        // 点击逻辑
+        if (isTrashItem) {
+            div.onclick = () => this.handleTrashItemClick(book);
+        } else {
+            div.onclick = () => this.openBook(book);
+        }
+        
         return div;
     },
 
     /**
-     * 渲染右下角的“丢弃书籍”按钮
+     * 处理垃圾桶物品点击
      */
-    renderTrashButton() {
-        const layout = document.querySelector('.bookshelf-layout');
-        if (!layout) return;
-
-        // 确保容器定位上下文
-        layout.style.position = 'relative'; 
-
-        // 防止重复添加
-        if (document.getElementById('btn-bookshelf-trash')) return;
-
-        const btn = document.createElement('button');
-        btn.id = 'btn-bookshelf-trash';
-        btn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-            <span style="vertical-align:middle;">丢弃书籍</span>
-        `;
+    handleTrashItemClick(book) {
+        // 自定义样式的确认框可以用 Modal 实现，这里先用 confirm 简单处理
+        const choice = confirm(`【${book.title}】\n\n要还原这本书吗？\n[确定] 还原到书架\n[取消] 彻底焚毁 (无法找回)`);
         
-        // 样式：绝对定位到右下角
-        btn.style.cssText = `
-            position: absolute; 
-            bottom: 20px; 
-            right: 20px; 
-            background: rgba(211, 47, 47, 0.1); 
-            color: #d32f2f; 
-            border: 1px solid #d32f2f; 
-            padding: 6px 12px; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            font-size: 12px;
-            transition: all 0.2s;
-            z-index: 10;
-        `;
-
-        btn.onmouseover = () => btn.style.background = 'rgba(211, 47, 47, 0.2)';
-        btn.onmouseout = () => btn.style.background = 'rgba(211, 47, 47, 0.1)';
-
-        btn.onclick = () => {
-            // 虽然没有实现，xs
-            if (confirm("🗑️ 确定要丢弃所有书籍吗？\n（系统指南和重要道具会保留，其他书籍将无法找回。）")) {
-                Library.reset();
-                this.render(); // 立即刷新界面
-                UIRenderer.log("🗑️ 书架已清空。");
+        if (choice) {
+            Library.restoreBook(book.id);
+            UIRenderer.log(`♻️ 已还原：《${book.title}》`);
+            this.render(); 
+        } else {
+            // 这里为了防止误触，可以再加一层确认，或者直接作为焚毁操作
+            // 根据 confirm 的逻辑，取消是 false。
+            // 如果你想把[取消]作为“什么都不做”，那就不操作。
+            // 但根据你的需求“取消可以彻底焚毁”，我们这里做一个二次确认比较安全
+            
+            if (confirm(`🔥 确定要【彻底焚毁】《${book.title}》吗？此操作不可逆！`)) {
+                Library.hardDeleteBook(book.id);
+                UIRenderer.log(`🔥 已焚毁：《${book.title}》`);
+                this.render();
             }
-        };
-
-        layout.appendChild(btn);
+        }
     },
 
     /**
      * 打开阅读器
      */
     openBook(book) {
-        console.log("正在打开书籍:", book.title, "ID:", book.id, "只读:", book.isReadOnly);
-
-        // 1. 更新当前 ID
         this.currentBookId = book.id;
-        
-        // 2. 强制重置为“阅读模式”
         this.toggleEditMode(false);
 
         ModalManager.open('reader-modal');
         
-        // 3. 填充阅读内容 (支持 Markdown)
         const titleEl = document.getElementById('reader-title');
         const contentEl = document.getElementById('reader-text');
         if(titleEl) titleEl.innerText = book.title;
-        if(contentEl) contentEl.innerHTML = marked.parse(book.content);
+        if(contentEl) contentEl.innerHTML = marked.parse(book.content || "");
 
-        // 4. 获取控制按钮
+        // 按钮状态更新
         const btnDelete = document.getElementById('btn-delete-book');
         const btnEdit = document.getElementById('btn-edit-book');
+        const btnExport = document.getElementById('btn-export-book');
 
-        // 5. 🔒 只读逻辑判断 (Strict Check)
         if (book.isReadOnly === true) {
-            // 只读模式：强力隐藏编辑与删除
-            if(btnDelete) btnDelete.style.setProperty('display', 'none', 'important');
-            if(btnEdit)   btnEdit.style.setProperty('display', 'none', 'important');
+            if(btnDelete) btnDelete.style.display = 'none';
+            if(btnEdit)   btnEdit.style.display = 'none';
         } else {
-            // 编辑模式：恢复显示
             if(btnDelete) btnDelete.style.display = 'inline-block';
             if(btnEdit)   btnEdit.style.display = 'inline-block';
             
-            // 预填充编辑框数据
+            // 填充编辑框
             const titleInput = document.getElementById('reader-title-input');
             const contentInput = document.getElementById('reader-content-input');
             if(titleInput) titleInput.value = book.title;
             if(contentInput) contentInput.value = book.content;
         }
+
+        if (btnExport) btnExport.style.display = 'inline-block';
     },
 
-    /**
-     * 切换 编辑/阅读 模式
-     */
     toggleEditMode(isEdit) {
-        // 安全检查：防止通过控制台强制开启编辑
         if (isEdit) {
             const currentBook = Library.getAll().find(b => b.id === this.currentBookId);
-            if (currentBook && currentBook.isReadOnly) {
-                console.warn("阻止进入编辑模式：书籍是只读的");
-                return; 
-            }
+            if (currentBook && currentBook.isReadOnly) return; 
         }
 
         const viewMode = document.getElementById('reader-view-mode');
         const editMode = document.getElementById('reader-edit-mode');
         const btnEdit = document.getElementById('btn-edit-book');
+        const btnExport = document.getElementById('btn-export-book');
         
         if(viewMode) viewMode.style.display = isEdit ? 'none' : 'block';
         if(editMode) editMode.style.display = isEdit ? 'flex' : 'none';
         
-        // 按钮显隐逻辑
-        if(btnEdit) {
-            if (!isEdit) {
-                 // 如果退出了编辑模式，且书不是只读的，把编辑按钮显示回来
-                 const currentBook = Library.getAll().find(b => b.id === this.currentBookId);
-                 if (currentBook && !currentBook.isReadOnly) {
-                     btnEdit.style.display = 'inline-block';
-                 }
-            } else {
-                // 进入编辑模式后，隐藏“进入编辑”按钮（因为已经在了）
-                btnEdit.style.display = 'none';
-            }
-        }
+        if(btnEdit) btnEdit.style.display = isEdit ? 'none' : 'inline-block';
+        if(btnExport) btnExport.style.display = isEdit ? 'none' : 'inline-block';
     },
 
-    /**
-     * 保存书籍更改
-     */
     handleSaveBook() {
         const id = this.currentBookId;
         const newTitle = document.getElementById('reader-title-input').value;
@@ -289,15 +324,12 @@ export const BookshelfRenderer = {
 
         if (!newTitle || !newContent) return alert("内容不能为空");
 
-        // 调用数据层更新
         const success = Library.updateBook(id, newTitle, newContent);
         
         if (success) {
-            // 刷新阅读器显示
             document.getElementById('reader-title').innerText = newTitle;
             document.getElementById('reader-text').innerHTML = marked.parse(newContent, {breaks:true});
-            
-            this.render(); // 刷新书架上的封面标题
+            this.render(); 
             this.toggleEditMode(false);
             UIRenderer.log(`已修订书籍：《${newTitle}》`);
         } else {
@@ -305,23 +337,40 @@ export const BookshelfRenderer = {
         }
     },
 
-    /**
-     * 删除单本书籍
-     */
     handleDeleteBook() {
         if (!this.currentBookId) return;
         
-        if (confirm("确定要销毁这本书吗？")) {
-            // 调用 removeBook 并检查返回值
-            const success = Library.removeBook(this.currentBookId);
+        if (confirm("确定要丢弃这本书吗？\n它将被移入废纸篓，稍后可找回。")) {
+            const success = Library.removeBook(this.currentBookId); // 软删除
             
             if (success) {
-                UIRenderer.log("销毁了一本书籍。");
+                UIRenderer.log("书籍已移入废纸篓。");
                 ModalManager.close('reader-modal');
-                this.render(); // 刷新书架列表
+                this.render(); 
             } else {
-                alert("无法销毁：可能是系统书籍或数据出错。");
+                alert("无法丢弃：可能是系统书籍。");
             }
+        }
+    },
+
+    async handleExportBook() {
+        if (!this.currentBookId) return;
+        const book = Library.getAll().find(b => b.id === this.currentBookId);
+        if (!book) return;
+
+        const exportContent = `# ${book.title}\n\n${book.content}`;
+        const safeTitle = book.title.replace(/[\\/:*?"<>|]/g, "_");
+        const defaultFilename = `${safeTitle}.md`;
+
+        if (window.ithacaSystem && window.ithacaSystem.exportFile) {
+            const result = await window.ithacaSystem.exportFile(defaultFilename, exportContent);
+            if (result.success) {
+                UIRenderer.log(`✨ 书籍已导出至：${result.path}`);
+            } else if (result.message !== '用户取消') {
+                alert(`导出失败：${result.message}`);
+            }
+        } else {
+            alert("当前环境不支持导出文件。");
         }
     },
 

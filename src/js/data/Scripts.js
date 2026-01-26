@@ -24,7 +24,7 @@ export const Scripts = {
         content: [
             { speaker: "我", text: "既然已经住下了，整理一下这边的旧书架吧。" },
             { speaker: "我", text: "（指尖划过书脊的声音）" },
-            { speaker: "我", text: "嗯？最上层深处好像卡着什么东西……" },
+            { speaker: "我", text: "嗯？最下层深处好像卡着什么东西……" },
             { speaker: "我", text: "（用力拉拽的声音）" },
             { speaker: "我", text: "掉出来一本封面是绿色的书，上面印着：'伊萨卡手记 I'。" }
         ]
@@ -242,9 +242,8 @@ export const Scripts = {
         title: "读信感想 (Day 15)",
         type: "reaction",
         content: [
-            { speaker: "我", text: "画风突变！" },
-            { speaker: "我", text: "刚才还在聊奥德修斯，突然就开始赶Due了。" },
-            { speaker: "我", text: "这该死的真实感……加油吧，打工人。" }
+            { speaker: "我", text: "不是，你还真有故事啊！" },
+            { speaker: "我", text: "坏了，我的好奇心被勾起来了，我也想看看一个游戏是如何开发出来的" },
         ]
     },
 
@@ -254,9 +253,8 @@ export const Scripts = {
         title: "读信感想 (Day 16)",
         type: "reaction",
         content: [
-            { speaker: "我", text: "“先假装没看到”……哈哈，这是世界通用的摸鱼技巧吗？" },
-            { speaker: "我", text: "不过，“先跑起来，再变好看”……" },
-            { speaker: "我", text: "这句话对我这种拖延症晚期患者，好像很有用。" }
+            { speaker: "我", text: "Coffee Talk嘛，等会儿去搜一下" },
+            { speaker: "我", text: "突然想来杯饮料，这就点一杯hhh" },
         ]
     },
 
@@ -266,8 +264,9 @@ export const Scripts = {
         title: "读信感想 (Day 17)",
         type: "reaction",
         content: [
-            { speaker: "我", text: "玩游戏还能写分析报告，这就是专业人士吗？" },
-            { speaker: "我", text: "我也想把“玩”变成正事啊……" }
+            { speaker: "我", text: "“****”……" },
+            { speaker: "我", text: "隔着屏幕都能感觉到他对那个“Inimeg”的怨念。" },
+            { speaker: "我", text: "看来即使是做自己喜欢的事，也免不了想砸键盘的时候啊。" }
         ]
     },
 
@@ -277,8 +276,8 @@ export const Scripts = {
         title: "读信感想 (Day 18)",
         type: "reaction",
         content: [
-            { speaker: "我", text: "彩蛋？" },
-            { speaker: "我", text: "好奇他藏了什么……" },
+            { speaker: "我", text: "“不要等到完美才发布”……" },
+            { speaker: "我", text: "这句话对我这种拖延症患者，好像很有用。" },
         ]
     },
 
@@ -288,9 +287,8 @@ export const Scripts = {
         title: "读信感想 (Day 19)",
         type: "reaction",
         content: [
-            { speaker: "我", text: "最后一天了啊……" },
-            { speaker: "我", text: "隔着纸都能感觉到那种既紧张又期待的心情。" },
-            { speaker: "我", text: "祝你顺利，糖水菠萝。" }
+            { speaker: "我", text: "厚着脸皮去推广吗……" },
+            { speaker: "我", text: "确实，一直藏在抽屉里的故事，永远也不会有人知道。" }
         ]
     },
 
@@ -300,9 +298,8 @@ export const Scripts = {
         title: "读信感想 (Day 20)",
         type: "reaction",
         content: [
-            { speaker: "我", text: "（咽了一下口水）" },
-            { speaker: "我", text: "看着这串菜名，我的肚子非常不争气地叫了一声。" },
-            { speaker: "我", text: "不行，今晚我也要点个外卖庆祝一下……虽然不知道庆祝什么。" }
+            { speaker: "我", text: "“动笔写下你的故事”……" },
+            { speaker: "我", text: "好。那就从今天开始试一试吧。" }
         ]
     },
 

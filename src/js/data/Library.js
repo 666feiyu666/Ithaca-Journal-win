@@ -43,7 +43,7 @@ const GUIDE_BOOK_I = {
 
 ---
 
-# 第二章：叙事理论
+## 第二章：叙事理论
 
 在进入书写实践之前，我们需要首先绘制一张地图。现代社会之所以需要“叙事”，并不只是因为故事迷人，而是因为现代性本身把“自我”变成了一项持续进行的工作。
 正如吉登斯所指出的：在晚期现代性条件下，自我不再是传统秩序自然赋予的身份，而是一项必须不断被维护、被解释、被更新的“自我的反思性项目”（Reflexive Project of the Self）。
@@ -68,7 +68,7 @@ const GUIDE_BOOK_I = {
 第二股传统则将目光投向外部世界与人际关系，这一脉络受政治哲学与批判理论的影响深远。
 
 受汉娜·阿伦特（Hannah Arendt）启发，这一传统强调叙事不仅仅是自我的独白，更是进入公共世界的“展示”（Appearance）。
-阿伦特与后来的约尔根·哈贝马斯（Jürgen Habermas）等人指出，叙事是一种社会交往与沟通的重要形式。并没有一个孤立的“我”在讲故事，我们的故事总是交织在人类关系的“网”中。
+阿伦特与后来的尤尔根·哈贝马斯（Jürgen Habermas）等人指出，叙事是一种社会交往与沟通的重要形式。并没有一个孤立的“我”在讲故事，我们的故事总是交织在人类关系的“网”中。
 
 正如当代女性主义批判理论家所言，身份认同是由社会文化环境塑造的。社会通过主流叙事（Master Narratives）为个体提供剧本（如性别角色、成功标准）。
 但这并不意味着我们是完全被动的。个体与社会在语言层面进行着持续的交互建构。通过书写，个体不仅是在确认自我，更可能是在挑战霸权叙事，通过“反叙事”来重塑社会图景。
@@ -444,193 +444,210 @@ const GUIDE_BOOK_IV = {
 `
 };
 
+// ==========================================
+// Library 核心逻辑
+// ==========================================
 export const Library = {
     books: [],
-    
-   async init() {
-        // 1. 读取存档
-        const saved = await window.ithacaSystem.loadData('library_data.json');
+
+    init() {
+        this.load();
         
-        // 🛡️【关键修复】安全加载逻辑
-        let loadedBooks = [];
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                // 必须确保它是数组，如果是对象 {} 则回退为空数组 []
-                if (Array.isArray(parsed)) {
-                    loadedBooks = parsed;
-                } else {
-                    console.warn("[Library] 警告：library_data.json 格式不正确(不是数组)，已自动重置为空书架。");
-                }
-            } catch (err) {
-                console.error("[Library] JSON 解析失败，重置为空:", err);
-            }
+        // 确保初始化时至少有一本默认的书 (可选，防止书架完全为空)
+        if (this.books.length === 0) {
+            // this.addBook("未命名手稿", "assets/images/booksheet/booksheet1.png");
         }
-        this.books = loadedBooks;
-
-        // --- 🧹 现有逻辑：清理旧的系统书 ---
-        // (由于上面保证了 this.books 绝对是数组，这一行现在安全了)
-        this.books = this.books.filter(b => {
-            const isOldSystemBook = (b.title.includes("伊萨卡手记") && b.id !== GUIDE_BOOK_I.id && !b.isMystery);
-            return !isOldSystemBook;
+        
+        // 数据迁移：确保 isDeleted 字段存在
+        let hasChanges = false;
+        this.books.forEach(b => {
+            if(b.isDeleted === undefined) {
+                b.isDeleted = false;
+                hasChanges = true;
+            }
         });
+        if(hasChanges) this.save();
+    },
 
-        // --- 🛠️ 现有逻辑：注入/更新《伊萨卡手记 I》 ---
-        const guideIndex = this.books.findIndex(b => b.id === GUIDE_BOOK_I.id);
-        if (guideIndex === -1) {
-            this.books.unshift(GUIDE_BOOK_I);
+    load() {
+        const data = localStorage.getItem('ithaca_library_books');
+        if (data) {
+            this.books = JSON.parse(data);
+        }
+    },
+
+    save() {
+        localStorage.setItem('ithaca_library_books', JSON.stringify(this.books));
+    },
+
+    getAll() {
+        return this.books.filter(b => !b.isDeleted);
+    },
+
+    getTrash() {
+        return this.books.filter(b => b.isDeleted);
+    },
+
+    /**
+     * ✨ [修复新增] 检查书籍是否存在
+     */
+    hasBook(id) {
+        return this.books.some(b => b.id === id && !b.isDeleted);
+    },
+
+    /**
+     * ✨ [修复新增] 解锁系统书籍
+     * index: 1, 2, 3, 4 对应四本手记
+     */
+    unlockSystemBook(index) {
+        let bookConfig = null;
+        if (index === 1) bookConfig = GUIDE_BOOK_I;
+        else if (index === 2) bookConfig = GUIDE_BOOK_II;
+        else if (index === 3) bookConfig = GUIDE_BOOK_III;
+        else if (index === 4) bookConfig = GUIDE_BOOK_IV;
+
+        if (bookConfig) {
+            const exists = this.books.find(b => b.id === bookConfig.id);
+            let hasChanged = false; // 标记是否有变动
+
+            if (!exists) {
+                // 深拷贝一份配置，防止引用修改
+                const newBook = JSON.parse(JSON.stringify(bookConfig));
+                // 确保没有删除标记
+                newBook.isDeleted = false; 
+                this.books.push(newBook);
+                this.save();
+                console.log(`[Library] Unlocked system book: ${newBook.title}`);
+                hasChanged = true;
+            } else {
+                // 如果书存在但在回收站里，把它恢复出来
+                if (exists.isDeleted) {
+                    exists.isDeleted = false;
+                    this.save();
+                    hasChanged = true;
+                }
+            }
+
+            // ✨ [核心修复] 如果发生了书籍解锁/恢复，检查“这就是伊萨卡手记”成就
+            if (hasChanged) {
+                const requiredBooks = ['guide_book_part1', 'guide_book_part2', 'guide_book_part3', 'guide_book_part4'];
+                // 使用 this.hasBook 检查每一本是否都在
+                const allCollected = requiredBooks.every(id => this.hasBook(id));
+                
+                if (allCollected) {
+                    // 调用 UserData 解锁成就
+                    UserData.unlockAchievement('ach_ithaca_full');
+                }
+                return true;
+            }
         } else {
-            this.books[guideIndex] = { 
-                ...this.books[guideIndex], 
-                content: GUIDE_BOOK_I.content,
-                isReadOnly: true,
-                title: GUIDE_BOOK_I.title
+            console.error(`[Library] Unknown system book index: ${index}`);
+        }
+        return false;
+    },
+
+    /**
+     * ✨【终极修复】智能添加书籍
+     * 既支持传入完整的 book 对象 (Binder调用)，也支持传入散装参数 (测试/旧代码调用)
+     */
+    addBook(bookOrTitle, content, coverPath) {
+        let newBook;
+
+        // 情况 A：Binder 传过来的是一个打包好的对象
+        if (typeof bookOrTitle === 'object' && bookOrTitle !== null) {
+            newBook = bookOrTitle;
+            
+            // 补全可能缺失的系统字段
+            if (!newBook.id) newBook.id = 'book_' + Date.now();
+            if (newBook.isDeleted === undefined) newBook.isDeleted = false;
+            if (!newBook.createdAt) newBook.createdAt = Date.now();
+            
+            // 确保内容字段存在 (防止 undefined)
+            if (newBook.content === undefined) newBook.content = "";
+        } 
+        // 情况 B：传过来的是标题、内容、封面 (散装参数)
+        else {
+            // 这里兼容你可能手写的 Library.addBook("标题", "内容", "封面")
+            // 注意：如果第二个参数看起来像路径（旧代码遗留），做个容错
+            let finalContent = content;
+            let finalCover = coverPath;
+            
+            if (!finalCover && finalContent && finalContent.length < 200 && (finalContent.includes('/') || finalContent.includes('.'))) {
+                 // 仅仅是为了防止旧代码把封面传到了内容的位置
+                 finalCover = finalContent;
+                 finalContent = "";
+            }
+
+            newBook = {
+                id: 'book_' + Date.now(),
+                title: bookOrTitle,
+                content: finalContent || "",
+                cover: finalCover || "assets/images/booksheet/booksheet1.png",
+                createdAt: Date.now(),
+                isDeleted: false
             };
         }
 
-        // ============================================================
-        // ✨ 现有逻辑：强制更新《糖水菠萝的日记》的封面
-        // ============================================================
-        const targetBookId = "book_pineapple_diary_complete";
-        const pineappleBook = this.books.find(b => b.id === targetBookId);
-        
-        if (pineappleBook) {
-            pineappleBook.cover = "assets/images/booksheet/booksheet1.png"; 
-            pineappleBook.isReadOnly = true; 
-        }
-
-        // 3. 保存更改到硬盘 (这会把正确的数组格式写回文件，彻底修复坏档)
-        this.save(); 
-
-        // ✨ 在初始化结束时也检查一次（防止读档后没触发）
-        this.checkCollectionAchievement();
-    },
-
-    // ✨ 新增辅助方法：检查全收集成就
-    checkCollectionAchievement() {
-        const requiredIds = ["guide_book_part1", "guide_book_part2", "guide_book_part3", "guide_book_part4"];
-        // 检查书架上是否包含了所有 requiredIds
-        const hasAll = requiredIds.every(id => this.books.some(b => b.id === id));
-        
-        if (hasAll) {
-            UserData.unlockAchievement('ach_ithaca_full');
-        }
-    },
-
-    // === ✨ 新增功能：解锁特定的系统书籍 ===
-    unlockSystemBook(partNumber) {
-        let targetBook = null;
-        switch(partNumber) {
-            case 2: targetBook = GUIDE_BOOK_II; break;
-            case 3: targetBook = GUIDE_BOOK_III; break;
-            case 4: targetBook = GUIDE_BOOK_IV; break;
-        }
-
-        if (targetBook) {
-            // 检查是否已经存在，避免重复添加
-            const exists = this.books.find(b => b.id === targetBook.id);
-            if (!exists) {
-                this.books.unshift(targetBook); // 加到最前面
-                this.save();
-                console.log(`[Library] 已解锁系统书籍：${targetBook.title}`);
-
-                // ✨ 每次获得新书后，检查是否集齐
-                this.checkCollectionAchievement();
-                return true;
-            }
-        }
-        return false;
-    },
-
-    // 增
-    addBook(book) {
-        this.books.push(book);
+        this.books.push(newBook);
         this.save();
-    },
-
-    // 特殊增加逻辑
-    addMysteryBook(data) {
-        const mysteryBook = {
-            id: "mystery_book_01", // 这里如果以后有多本神秘书，建议用 uuid 或传入 ID
-            title: data.title,
-            author: data.author,
-            content: data.content,
-            cover: data.cover,
-            isMystery: true,
-            isCollected: true
-        };
         
-        if (!this.books.find(b => b.id === mysteryBook.id)) {
-            this.books.unshift(mysteryBook);
-            this.save();
-        }
+        console.log(`[Library] Added book: ${newBook.title}`, newBook); // 方便调试
+        return newBook;
     },
 
-    // 改 (合并后的版本)
-    updateBook(id, title, content) {
+    updateBook(id, newTitle, newContent, newCover) { // ✨ 参数顺序修改：添加 newContent
         const book = this.books.find(b => b.id === id);
         if (book) {
-            // 🔒 保护逻辑
-            if (book.isReadOnly) {
-                console.warn("试图修改只读书籍，操作被拦截");
-                return false; // 返回 false 表示失败
+            // 更新标题
+            if (newTitle !== undefined && newTitle !== null) {
+                book.title = newTitle;
             }
-            book.title = title;
-            book.content = content;
-            this.save();
-            return true; // 返回 true 表示成功
-        }
-        return false;
-    },
+            
+            // ✨ 【核心修复】：正确更新内容
+            if (newContent !== undefined && newContent !== null) {
+                book.content = newContent;
+            }
 
-    // 删 (合并后的版本，去掉了 deleteBook，统一用 removeBook)
-    removeBook(id) {
-        const book = this.books.find(b => b.id === id);
-        
-        // 🔒 保护逻辑
-        if (book && book.isReadOnly) {
-            console.warn(`书籍 ${book.title} 是系统书籍，无法销毁。`);
-            return false; 
-        }
+            // 更新封面（如果有传入第4个参数）
+            if (newCover) {
+                book.cover = newCover;
+            }
 
-        const initialLength = this.books.length;
-        this.books = this.books.filter(b => b.id !== id);
-        
-        if (this.books.length !== initialLength) {
             this.save();
             return true;
         }
         return false;
     },
 
-    // 辅助查询：检查某本书是否已在书架上 (用于判断是否需要触发剧情)
-    hasBook(bookId) {
-        return this.books.some(b => b.id === bookId);
-    },
-
-    // 查
-    getAll() {
-        return this.books;
-    },
-
-    // ✨ 新增：重置图书馆（清空所有书籍，但保留系统指南）
-    reset() {
-        // 修复：不直接清空为 []，而是过滤保留只读书籍（如系统指南、剧情道具书）
-        this.books = this.books.filter(b => b.isReadOnly);
-        
-        // 兜底：如果过滤后发现指南不在了 (极小概率)，强制加回来
-        const hasGuide = this.books.some(b => b.id === GUIDE_BOOK_I.id);
-        if (!hasGuide) {
-             this.books.unshift(GUIDE_BOOK_I);
+    removeBook(id) {
+        const book = this.books.find(b => b.id === id);
+        if (book) {
+            book.isDeleted = true;
+            book.deletedAt = Date.now();
+            this.save();
+            return true;
         }
-
-        // 3. 保存
-        this.save();
-        console.log("📚 图书馆已重置 (保留了系统书籍)");
+        return false;
     },
 
-    // 存
-    save() {
-        window.ithacaSystem.saveData('library_data.json', JSON.stringify(this.books));
+    restoreBook(id) {
+        const book = this.books.find(b => b.id === id);
+        if (book) {
+            book.isDeleted = false;
+            delete book.deletedAt;
+            this.save();
+            return true;
+        }
+        return false;
+    },
+
+    hardDeleteBook(id) {
+        const index = this.books.findIndex(b => b.id === id);
+        if (index !== -1) {
+            this.books.splice(index, 1);
+            this.save();
+            return true;
+        }
+        return false;
     }
 };

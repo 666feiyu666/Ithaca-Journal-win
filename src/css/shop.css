@@ -29,7 +29,21 @@
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
     gap: 20px;
     padding: 30px;
-    overflow-y: auto; /* 允许垂直滚动 */
+    /* === 新增/修改以下代码以解决溢出问题 === */
+    
+    /* 1. 开启垂直滚动 */
+    overflow-y: auto; 
+    
+    /* 2. 限制高度，确保滚动条能出现 */
+    /* 方式 A：如果父容器是 flex 布局（推荐） */
+    flex: 1; 
+    min-height: 0; /* 防止 flex 子项内容溢出 */
+    
+    /* 方式 B：如果父容器不是 flex，或者你需要手动指定高度 */
+    /* max-height: 60vh;  (根据你的弹窗总高度 80vh 减去头部高度调整) */
+    
+    /* 3. (可选) 美化滚动条 padding，防止内容贴边 */
+    padding-right: 10px;
 }
 
 /* 隐藏滚动条但保留滚动功能 (可选，为了美观) */
@@ -76,8 +90,11 @@
 
 /* 商品图片：像素风渲染 */
 .shop-icon {
-    width: 70%; 
-    height: auto;
+/* === 添加以下 4 行代码 === */
+    max-width: 80%;  /* 限制最大宽度，防止太宽 */
+    max-height: 80%; /* 关键！限制最大高度，防止像衣架这种细长的物体溢出 */
+    width: auto;     /* 让图片保持原始比例 */
+    height: auto;    /* 让图片保持原始比例 */
     image-rendering: pixelated; 
     image-rendering: -moz-crisp-edges;
 }

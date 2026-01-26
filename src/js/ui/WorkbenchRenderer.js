@@ -89,14 +89,28 @@ export const WorkbenchRenderer = {
         if (!selectEl) return;
 
         const currentVal = selectEl.value;
-        selectEl.innerHTML = `<option value="ALL">📂 所有记忆</option><option value="INBOX_VIRTUAL_ID">📥 收件箱</option>`;
+
+        // ✨ 修复：手动添加 'nb_daily' (日常碎片) 到下拉菜单中
+        // 顺序：所有 -> 收件箱 -> 日常碎片 -> (自定义本子...)
+        let html = `
+            <option value="ALL">所有记忆</option>
+            <option value="INBOX_VIRTUAL_ID">收件箱 (未分类)</option>
+            <option value="nb_daily">日常碎片</option>
+        `;
         
-        UserData.state.notebooks.forEach(nb => {
-            const option = document.createElement('option');
-            option.value = nb.id;
-            option.text = `${nb.icon||'📔'} ${nb.name}`;
-            selectEl.appendChild(option);
+            UserData.state.notebooks.forEach(nb => {
+            // 🛡️ 防御性过滤：如果在自定义列表里发现了重复的 'nb_daily' 或 'nb_inbox'，跳过不渲染
+            // 避免下拉菜单里出现两个“日常碎片”
+            if (nb.id === 'nb_daily' || nb.id === 'nb_inbox') return;
+
+            // 处理图标 (复用上一轮的优化逻辑)
+            const isPath = nb.icon && (nb.icon.includes('/') || nb.icon.includes('.'));
+            const displayIcon = isPath ? '' : (nb.icon || '');
+            
+            html += `<option value="${nb.id}">${displayIcon} ${nb.name}</option>`;
         });
+
+        selectEl.innerHTML = html;
 
         if (currentVal) selectEl.value = currentVal;
     },
@@ -107,11 +121,20 @@ export const WorkbenchRenderer = {
         listEl.innerHTML = "";
 
         const entries = Journal.getAll().filter(entry => {
-            const matchText = !filterText || entry.content.toLowerCase().includes(filterText.toLowerCase());
+            // 安全性优化：防止 content 为空导致报错
+            const content = entry.content || "";
+            const matchText = !filterText || content.toLowerCase().includes(filterText.toLowerCase());
+            
             let matchNotebook = true;
-            if (filterNotebookId === "ALL") matchNotebook = true;
-            else if (filterNotebookId === "INBOX_VIRTUAL_ID") matchNotebook = (!entry.notebookIds || entry.notebookIds.length === 0);
-            else matchNotebook = (entry.notebookIds && entry.notebookIds.includes(filterNotebookId));
+            if (filterNotebookId === "ALL") {
+                matchNotebook = true;
+            } else if (filterNotebookId === "INBOX_VIRTUAL_ID") {
+                matchNotebook = (!entry.notebookIds || entry.notebookIds.length === 0);
+            } else {
+                // ✨ 修复核心：使用 some + String() 解决 "数字 vs 字符串" 的类型匹配问题
+                matchNotebook = entry.notebookIds && entry.notebookIds.some(id => String(id) === String(filterNotebookId));
+            }
+            
             return matchText && matchNotebook;
         });
 

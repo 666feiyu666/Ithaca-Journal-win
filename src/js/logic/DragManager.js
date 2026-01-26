@@ -104,33 +104,32 @@ export const DragManager = {
     
     // --- 1. 开始拖拽 (从背包拿新家具) ---
     // targetWidth: 从 UIRenderer 传入的预期像素宽度
-    startDragNew(e, itemId, imgSrc, targetWidth) {
+    startDragNew(e, itemId, imgSrc, targetWidth, isWallItem) {
         if (!this.isDecorating) return;
         e.preventDefault();
 
-        this.draggedItem = { type: 'new', itemId: itemId };
-        this.currentDirection = 1; // 新物品默认正向
+        // 👇 修改点：把 isWallItem 存进去
+        this.draggedItem = { type: 'new', itemId: itemId, isWallItem: isWallItem };
+        this.currentDirection = 1; 
         
         this.createGhost(e.clientX, e.clientY, imgSrc, targetWidth);
         this.showMarker(true);
     },
-
     // --- 2. 开始拖拽 (移动房间里已有的家具) ---
     // 🔧 修复：接收 initialDirection 参数，防止拿起时方向重置
-    startDragExisting(e, uid, imgSrc, initialDirection = 1) {
+    startDragExisting(e, uid, imgSrc, initialDirection = 1, isWallItem) {
         if (!this.isDecorating) return;
         e.preventDefault();
-        e.stopPropagation(); // 防止触发家具的点击事件
+        e.stopPropagation(); 
 
         const el = document.getElementById(`furniture-${uid}`);
-        
-        // 获取当前家具的实际显示宽度，传给 Ghost 防止缩小
         const currentWidth = el ? el.offsetWidth : 100;
         
-        if (el) el.style.opacity = '0.3'; // 原物体变半透明
+        if (el) el.style.opacity = '0.3'; 
 
-        this.draggedItem = { type: 'existing', uid: uid, element: el };
-        this.currentDirection = initialDirection; // ✨ 继承原有方向
+        // 👇 修改点：把 isWallItem 存进去
+        this.draggedItem = { type: 'existing', uid: uid, element: el, isWallItem: isWallItem };
+        this.currentDirection = initialDirection; 
         
         this.createGhost(e.clientX, e.clientY, imgSrc, currentWidth);
         this.showMarker(true);
@@ -187,34 +186,66 @@ export const DragManager = {
         const hudEl = document.querySelector('.inventory-bar-container');
         if (hudEl) {
             const hudRect = hudEl.getBoundingClientRect();
-            // 如果鼠标进入了黑色区域，视为回收
             if (e.clientX >= hudRect.left && e.clientX <= hudRect.right &&
                 e.clientY >= hudRect.top && e.clientY <= hudRect.bottom) {
                 return 'recycle';
             }
         }
 
-        // 2. 检查是否在房间的菱形地板范围内
+        // 2. 检查有效区域
         if (pos) {
-            // == 菱形参数配置 ==
-            // 这些数值基于 src/css/room.css 网格和背景图透视估算
-            // 中心点(50, 65)，宽半径45，高半径35
-            const centerX = 50;   
-            const centerY = 65;   
-            const rangeX = 45;    
-            const rangeY = 35;    
+            // ✨ 新增逻辑：如果是墙面物品，使用矩形判定
+            if (this.draggedItem && this.draggedItem.isWallItem) {
+                // === 墙面物品判定逻辑 ===
+                
+                // 1. 基础边界限制 (防止拖出屏幕左右)
+                if (pos.x < 2 || pos.x > 98) return 'invalid';
 
-            // 计算曼哈顿距离公式: |dx|/Rx + |dy|/Ry <= 1
-            const dist = Math.abs(pos.x - centerX) / rangeX + Math.abs(pos.y - centerY) / rangeY;
+                // 2. 地板边界限制 (防止拖到地板上)
+                if (pos.y > 100) return 'invalid';
 
-            // 🔧 修复：将阈值从 1.1/1.3 提高到 1.5
-            // 1.5 允许家具的一半左右超出地板边缘，完美解决“贴墙变红”的问题
-            if (dist <= 1.5) {
+                // 3. ✨ 核心修改：计算动态天花板 (V字形判定) ✨
+                // ----------------------------------------------------
+                const centerX = 50; // 房间中线 X 坐标
+                const roofTop = 0;  // 墙角最高点 (y) -> 你想挂的高处
+                
+                // 斜率因子：数值越大，两侧天花板下降得越厉害
+                const slope = 0.45; 
+
+                // 计算当前 x 坐标对应的“合法天花板高度”
+                // 离中心越远，allowedTop 数值越大 (位置越低)
+                const currentCeilingY = roofTop + (Math.abs(pos.x - centerX) * slope);
+
+                // 如果当前鼠标 y 比天花板还高 (即数值更小)，则无效
+                if (pos.y < currentCeilingY) {
+                    return 'invalid';
+                }
+
+                // 4. (可选) 如果只想限制在左墙
+                // if (pos.x > 50) return 'invalid'; 
+
                 return 'valid';
+            }
+            else {
+                // ✨ 原有逻辑：地面物品，保持菱形判定
+                
+                // 中心点(50, 65)，宽半径45，高半径35
+                const centerX = 50;   
+                const centerY = 65;   
+                const rangeX = 45;    
+                const rangeY = 35;    
+
+                // 计算曼哈顿距离公式: |dx|/Rx + |dy|/Ry <= 1
+                const dist = Math.abs(pos.x - centerX) / rangeX + Math.abs(pos.y - centerY) / rangeY;
+
+                // 地板阈值 1.5
+                if (dist <= 1.5) {
+                    return 'valid';
+                }
             }
         }
 
-        // 3. 既不在回收区，也不在菱形地板内 -> 无效
+        // 3. 既不在回收区，也不在合法区域 -> 无效
         return 'invalid';
     },
 

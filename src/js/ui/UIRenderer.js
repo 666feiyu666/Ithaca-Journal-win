@@ -62,21 +62,6 @@ export const UIRenderer = {
         if (btnHome) {
             btnHome.onclick = () => this.returnHome();
         }
-        
-        // 房间内的“门”热区
-        const door = document.getElementById('hotspot-door');
-        if (door) {
-            door.onclick = () => this.toggleMap(true);
-        }
-
-        // 地图上的“回房间” Pin
-        const homePin = document.getElementById('hotspot-home-pin');
-        if (homePin) {
-            homePin.onclick = () => {
-                this.toggleMap(false); 
-                this.log("逛累了，回到了温馨的房间。");
-            };
-        }
     },
 
     returnHome() {
@@ -84,29 +69,12 @@ export const UIRenderer = {
         ModalManager.closeAll();
 
         // 2. 处理场景切换
-        const mapScene = document.getElementById('scene-map');
-        const streetScene = document.getElementById('scene-intro'); 
+        const cityScene = document.getElementById('scene-city');
         
-        if (mapScene && mapScene.style.display !== 'none') {
-            this.toggleMap(false); // 从地图回房间
-        } else if (streetScene && streetScene.style.display !== 'none') {
-            StoryManager.returnHome(); // 从剧情回房间
+        if (cityScene !== 'none') {
+            StoryManager.returnHome(); // 从地图回房间
         } else {
             this.log("已经在房间里了。");
         }
-    },
-
-    toggleMap(show) {
-        const room = document.getElementById('scene-room');
-        const map = document.getElementById('scene-map');
-        if (room) room.style.display = show ? 'none' : 'block';
-        if (map) map.style.display = show ? 'flex' : 'none';
-        
-        // ✨ 新增逻辑：触发“城市漂流”成就
-        if (show) {
-             UserData.unlockAchievement('ach_city');
-        }
-
-        this.log(show ? "推开门，来到了街道上。" : "回到了房间。");
     }
 };

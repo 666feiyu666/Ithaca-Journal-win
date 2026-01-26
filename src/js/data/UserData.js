@@ -102,7 +102,7 @@ export const UserData = {
         if (!this.state.layout) {
             console.log("检测到新用户/重置状态，发放新手礼包...");
             this.state.layout = []; 
-            const starterPack = ['item_desk_default', 'item_bookshelf_default', 'item_rug_default', 'item_chair_default', 'item_bed_default'];
+            const starterPack = ['item_desk_default', 'item_bookshelf_default', 'item_rug_default', 'item_chair_default', 'item_bed_default','item_shelf_default'];
             starterPack.forEach(id => {
                 if (!this.state.inventory.includes(id)) this.state.inventory.push(id);
             });
@@ -164,6 +164,13 @@ export const UserData = {
         if (!this.hasReadMail(day)) {
             this.state.readMails.push(day);
             this.save();
+            
+            // ✨ [修复] 检查是否阅读了10封信
+            // 注意：如果还有其他NPC的信件，这里可能需要过滤 ID，
+            // 但如果只有糖水菠萝的信，直接判断长度即可。
+            if (this.state.readMails.length >= 10) {
+                this.unlockAchievement('ach_pineapple');
+            }
         }
     },
 

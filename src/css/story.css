@@ -195,3 +195,27 @@
     height: 100vh;
     z-index: 1000;
 }
+
+#scene-city {
+    display: none; /* 初始状态设为 none，禁止任何闪现 */
+    opacity: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+}
+
+/* 场景中的人物立绘样式 */
+.scene-character-img {
+    position: absolute;
+    bottom: 0;           /* 站在底部 */
+    left: 50%;           /* 水平居中 */
+    transform: translateX(-50%); 
+    height: 30vh;        /* 高度占屏幕30% (根据素材调整) */
+    width: auto;         /* 宽度自动保持比例 */
+    z-index: 5;          /* 保证在背景(z-index低)之上，对话框之下 */
+    pointer-events: none; /* 让鼠标点击能穿透图片，不影响点对话框 */
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.3)); /* 加一点阴影更有立体感 */
+}

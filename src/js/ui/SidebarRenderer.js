@@ -1,7 +1,7 @@
 /* src/js/ui/SidebarRenderer.js */
 import { Journal } from '../data/Journal.js';
+import { Library } from '../data/Library.js';
 import { UserData } from '../data/UserData.js';
-import { ModalManager } from './ModalManager.js';
 import { HUDRenderer } from './HUDRenderer.js'; // 引入 HUD 以刷新墨水
 import { marked } from '../libs/marked.esm.js';   // 引入 marked 以支持预览
 
@@ -175,11 +175,105 @@ export const SidebarRenderer = {
     render() {
         if (!this.currentNotebookId) {
             this.renderNotebookList();
+        } else if (this.currentNotebookId === 'TRASH_BIN_ID') {
+            this.renderTrashList(); // ✨ 进入回收站视图
         } else {
             this.renderEntryList(this.currentNotebookId);
         }
     },
 
+    // ✨ 修复：渲染回收站列表
+    renderTrashList() {
+        const listEl = document.getElementById('journal-list');
+        const headerEl = document.querySelector('.sidebar-header h4');
+        const addBtn = document.getElementById('btn-new-entry');
+        
+        if (!listEl) return;
+        listEl.innerHTML = "";
+
+        if (headerEl) {
+            headerEl.innerHTML = `<span id="btn-back-level" class="nav-back-btn" style="cursor:pointer; margin-right:5px;">⬅️</span> 🗑️ 废纸篓`;
+            const backBtn = document.getElementById('btn-back-level');
+            if(backBtn) {
+                backBtn.onclick = (e) => { e.stopPropagation(); this.currentNotebookId = null; this.render(); };
+            }
+        }
+        
+        if (addBtn) addBtn.style.display = 'none';
+
+        const trashJournals = Journal.getTrash().map(j => ({ ...j, type: 'journal' }));
+        const trashBooks = Library.getTrash().map(b => ({ ...b, type: 'book' }));
+        
+        const allTrash = [...trashJournals, ...trashBooks].sort((a, b) => {
+            const timeA = a.deletedAt || 0;
+            const timeB = b.deletedAt || 0;
+            return timeB - timeA;
+        });
+
+        if (allTrash.length === 0) {
+            listEl.innerHTML = `<div style="text-align:center; color:#999; margin-top:50px; font-size:12px;">这里很干净<br>没有废纸</div>`;
+            return;
+        }
+
+        allTrash.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.style.cssText = "border-left: 3px solid #ddd; padding: 10px; margin-bottom: 8px; background: #fafafa;";
+            
+            const isJournal = item.type === 'journal';
+            const icon = isJournal ? '📝' : '📕';
+            const title = isJournal ? (item.content.substring(0, 15).replace(/\n/g,' ') + '...') : `《${item.title}》`;
+            const dateStr = isJournal ? item.date : (item.date || '未知日期');
+
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px; font-weight:bold; color:#666;">
+                    <span>${icon} ${isJournal ? '日记残页' : '废弃手稿'}</span>
+                    <span style="font-size:11px; font-weight:normal;">${dateStr}</span>
+                </div>
+                <div style="font-size:12px; color:#888; margin-bottom:8px;">${title}</div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn-restore" style="font-size:11px; padding:2px 8px; cursor:pointer; background:#e8f5e9; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px;">♻️ 还原</button>
+                    <button class="btn-burn" style="font-size:11px; padding:2px 8px; cursor:pointer; background:#ffebee; border:1px solid #ffcdd2; color:#c62828; border-radius:4px;">🔥 焚毁</button>
+                </div>
+            `;
+
+            const btnRestore = div.querySelector('.btn-restore');
+            const btnBurn = div.querySelector('.btn-burn');
+
+            // ♻️ 还原按钮
+            btnRestore.onclick = (e) => {
+                e.stopPropagation();
+                if (isJournal) Journal.restoreEntry(item.id);
+                else Library.restoreBook(item.id);
+                
+                this.renderTrashList(); 
+                
+                // ✨【关键修复】刷新 HUD，以防还原操作影响字数显示（取决于逻辑）
+                HUDRenderer.updateAll(); 
+            };
+
+            // 🔥 焚毁按钮
+            btnBurn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm(`确定要彻底焚毁${isJournal ? '这页日记' : '这本书'}吗？\n此操作就像燃烧后的灰烬，永远无法复原。`)) {
+                    if (isJournal) {
+                        Journal.hardDeleteEntry(item.id); // Journal.js 里这个操作会 UserData.updateWordCount(-x)
+                    } else {
+                        Library.hardDeleteBook(item.id);
+                    }
+                    
+                    this.renderTrashList();
+
+                    // ✨【关键修复】这里必须调用 updateAll，否则扣除的字数不会立刻显示
+                    HUDRenderer.updateAll(); 
+                    
+                    HUDRenderer.log("🔥 彻底焚毁了记忆。");
+                }
+            };
+
+            listEl.appendChild(div);
+        });
+    },
     /**
      * Level 1: 渲染手记本目录
      */
@@ -193,7 +287,9 @@ export const SidebarRenderer = {
         
         if (headerEl) headerEl.innerText = "📂 归档系统";
         
+        // ✨ 关键修复：确保按钮是可见的
         if (addBtn) {
+            addBtn.style.display = 'block';
             addBtn.title = "新建日记";
             addBtn.onclick = () => this.handleNewEntry();
         }
@@ -237,13 +333,36 @@ export const SidebarRenderer = {
             this._createCustomNotebookItem(listEl, nb, count);
         });
 
-        // 4. 底部新建按钮
+        // 4. 新建按钮 (保持不变)
         const createBtn = document.createElement('div');
         createBtn.className = 'list-item';
         createBtn.style.cssText = 'text-align:center; color:#888; margin-top:10px; border:1px dashed #ccc; cursor:pointer;';
         createBtn.innerText = "+ 新建手记本";
         createBtn.onclick = () => this.showNotebookInputModal('create');
         listEl.appendChild(createBtn);
+
+        // ============================================================
+        // ✨ 新增：回收站入口 (放在最底部)
+        // ============================================================
+        const trashJournalCount = Journal.getTrash().length;
+        const trashBookCount = Library.getTrash().length;
+        const totalTrash = trashJournalCount + trashBookCount;
+
+        const trashBtn = document.createElement('div');
+        trashBtn.className = 'list-item';
+        trashBtn.style.cssText = "margin-top: 20px; border-top: 1px solid #eee; padding-top:10px; color:#d32f2f;";
+        
+        trashBtn.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>🗑️ 废纸篓</span>
+                <span style="font-size:12px; background:#ffebee; padding:2px 6px; border-radius:10px;">${totalTrash}</span>
+            </div>
+        `;
+        trashBtn.onclick = () => {
+            this.currentNotebookId = 'TRASH_BIN_ID'; // 特殊 ID
+            this.render();
+        };
+        listEl.appendChild(trashBtn);
     },
 
     /**
@@ -256,6 +375,13 @@ export const SidebarRenderer = {
         
         if (!listEl) return;
         listEl.innerHTML = "";
+
+        // ✨ 关键修复：确保按钮是可见的 (从废纸篓回来后可能会被隐藏)
+        if (addBtn) {
+            addBtn.style.display = 'block'; 
+            addBtn.title = "在此手记本中新建";
+            addBtn.onclick = () => this.handleNewEntry();
+        }
 
         let entries = [];
         let title = "";
@@ -368,7 +494,7 @@ export const SidebarRenderer = {
         }
     },
 
-    renderTagBar(entry) {
+   renderTagBar(entry) {
         let tagContainer = document.getElementById('entry-tag-bar');
         
         if (!tagContainer) {
@@ -387,7 +513,45 @@ export const SidebarRenderer = {
 
         tagContainer.innerHTML = `<span style="font-size:12px; color:#999; margin-right:5px;">归档至：</span>`;
 
+        // ============================================================
+        // 1. 手动添加【日常碎片】系统标签 (修复点)
+        // ============================================================
+        const dailyId = 'nb_daily';
+        const isDaily = entry.notebookIds && entry.notebookIds.includes(dailyId);
+        
+        const dailyTag = document.createElement('span');
+        dailyTag.innerHTML = `🧩 日常碎片`; // 使用固定图标和名称
+        dailyTag.style.cssText = "display:inline-flex; align-items:center; font-size:12px; padding:4px 10px; border-radius:15px; cursor:pointer; user-select:none; transition:all 0.2s;";
+        
+        // 选中状态样式
+        if (isDaily) {
+            dailyTag.style.border = "1px solid #ffa000"; // 使用日常碎片的专属橙色
+            dailyTag.style.background = "#ffa000";
+            dailyTag.style.color = "#fff";
+        } else {
+            dailyTag.style.border = "1px solid #ddd";
+            dailyTag.style.background = "#fff";
+            dailyTag.style.color = "#666";
+        }
+
+        dailyTag.onclick = () => {
+            Journal.toggleNotebook(entry.id, dailyId);
+            this.renderTagBar(entry);
+            // 如果当前正处于“日常碎片”视图或“收件箱”视图，刷新整个列表
+            if (this.currentNotebookId === dailyId || this.currentNotebookId === 'INBOX_VIRTUAL_ID') {
+                    this.render(); 
+            }
+        };
+        tagContainer.appendChild(dailyTag);
+
+        // ============================================================
+        // 2. 遍历渲染【用户自定义】标签
+        // ============================================================
         UserData.state.notebooks.forEach(nb => {
+            // 关键：跳过 nb_daily，防止重复（如果它也存在于自定义列表中的话）
+            // 同时也跳过 nb_inbox，因为收件箱通常意味着“无标签”
+            if (nb.id === 'nb_daily' || nb.id === 'nb_inbox') return;
+
             const isSelected = entry.notebookIds && entry.notebookIds.includes(nb.id);
             const tag = document.createElement('span');
             

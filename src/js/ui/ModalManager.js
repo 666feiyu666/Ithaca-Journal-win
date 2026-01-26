@@ -10,7 +10,7 @@ export const ModalManager = {
     ],
 
     init() {
-        // 1. 绑定现有的关闭按钮点击事件
+        // 1. 绑定现有的关闭按钮点击事件 (保持原样)
         document.querySelectorAll('.btn-close-modal, .close-text-btn, .close-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const modal = btn.closest('.modal-overlay');
@@ -18,12 +18,25 @@ export const ModalManager = {
             });
         });
         
-        // ✨ 2. 新增：全局 ESC 键监听 (UX优化)
+        // 2. 全局 ESC 键监听 (保持原样)
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                // 阻止默认行为（防止在 Electron 全屏模式下意外退出全屏等）
                 e.preventDefault();
                 this.closeAll();
+            }
+        });
+
+        // ✨ 3. 新增：点击弹窗外部（遮罩层）关闭
+        this.modals.forEach(modalId => {
+            const el = document.getElementById(modalId);
+            if (el) {
+                el.addEventListener('click', (e) => {
+                    // 核心逻辑：判断点击的是否是背景层本身 (e.target)
+                    // 而不是背景层内部的子元素 (如文本框、按钮等)
+                    if (e.target === el) {
+                        this.close(modalId);
+                    }
+                });
             }
         });
     },

@@ -67,22 +67,34 @@ export const CityEvent = {
         // UserData 内部已经做了去重判断（if hasAchievement then return），所以这里直接调用很安全
         UserData.unlockAchievement('ach_city');
 
-        // 生成随机剧情文本
-        const content = this.generateEventText(location);
+        // --- 🟢 新增：偶遇判定逻辑 ---
+        let content = this.generateEventText(location);
+        let charSrc = null; // 默认没有立绘
 
-        // ... 后续逻辑保持不变 ...
+        // 🏫 如果是大学，且 30% 概率触发 (你可以调高这个概率测试，比如 > 0)
+        if (location.id === 'university' && Math.random() > 0.0) { // 测试阶段设为 100% 或 > 0.0
+            // 覆盖默认文本
+            content = "……";
+            
+            // 设置立绘路径
+            charSrc = 'assets/images/character/character1.png';
+        }
+        // ---------------------------
+
+        // 调用 StoryManager，传入立绘
         StoryManager.showSceneDialogue(
             `抵达：${location.name.split(' ')[1]}`, 
             content,
-            location.bg 
+            location.bg,
+            charSrc // ✨ 传入立绘参数 
         );
 
         // 概率掉落碎片 (保持不变)
-        if (Math.random() > 0.7) {
-            setTimeout(() => {
-                StoryManager.unlockFragment('frag_pineapple_03'); 
-            }, 1000);
-        }
+        // if (Math.random() > 0.7) {
+        //     setTimeout(() => {
+        //         StoryManager.unlockFragment('frag_pineapple_03'); 
+        //     }, 1000);
+        // }
     },
     // 生成随机文本 (保持不变)
     generateEventText(loc) {

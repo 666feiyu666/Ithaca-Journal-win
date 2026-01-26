@@ -6,11 +6,24 @@
 .room-container {
     width: 100vw;
     height: 100vh;
-    background: #2b2b2b; /* 深色背景，作为屏幕边缘填充 */
+    
+    /* 🔴 删除或注释掉原来的纯色背景 */
+    /* background: #4b3e35; */ 
+
+    /* 🟢 新增：设置桌面背景图 */
+    background-image: url('../assets/images/desktop_bg.png');
+    
+    /* 关键属性：让图片铺满屏幕，类似于电脑壁纸 */
+    background-size: cover;   
+    background-position: center;
+    background-repeat: no-repeat;
+
+    /* 保持原有的 Flex 布局，这能确保你的房间(iso-room)永远居中 */
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* 禁止出现滚动条 */
+    
+    overflow: hidden; 
     position: relative;
 }
 
@@ -21,6 +34,14 @@
     width: 960px; 
     height: 720px; 
     margin: auto;
+
+    /* ✨ 新增：强烈的立体投影 */
+    /* 参数解释: 水平偏移0, 垂直偏移30px, 模糊60px, 颜色黑色(50%透明) */
+    box-shadow: 10 10px 10px rgba(0, 0, 0, 0.5);
+
+    /* 可选：如果你希望房间有一圈极细的白边/亮边来模拟照片质感，可以加上这个： */
+    /* border: 4px solid #fff; */
+    /* border-radius: 4px; */
 }
 
 /* 房间背景图 */
@@ -39,6 +60,8 @@
 .room-background.night-mode {
     filter: brightness(0.5) contrast(1.1) grayscale(0.2) hue-rotate(-10deg);
 }
+
+
 
 
 /* ================== 2. 交互热区 & 家具 ================== */
@@ -75,7 +98,7 @@
 .pixel-furniture:hover {
     /* ✨ 必须保留 var(--dir)，否则悬浮时会瞬间转回去 */
     /* 同时加上 !important 确保它浮在最上层 */
-    transform: scaleX(var(--dir)) scale(1.05) translateY(-5px);
+    transform: scaleX(var(--dir)) scale(1.01);
     z-index: 9999 !important; 
     
     filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));
@@ -346,9 +369,12 @@
     filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8));
     transition: filter 0.2s;
 }
+/* ✅ 修改后：补上 scaleX(var(--dir)) */
 .iso-room.decorating .pixel-furniture:hover {
     filter: drop-shadow(0 0 8px rgba(255, 255, 255, 1));
-    transform: scale(1.02);
+    
+    /* 核心修改：先读取方向变量，再进行缩放 */
+    transform: scaleX(var(--dir)) scale(1.02);
 }
 
 /* 装修网格投影 (符合透视的菱形) */
